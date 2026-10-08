@@ -1,30 +1,53 @@
 import { describe, expect, test } from "vitest";
 import { makeFunctionReference } from "convex/server";
 import type { DefaultFunctionArgs } from "convex/server";
-import { modules, newTest, signedInAs } from "./helpers";
+import type { Id } from "../../convex/_generated/dataModel";
+import { RECORDING_CONSENT_TEXT } from "../../src/lib/consent";
+import {
+  grantConsent,
+  insertCall,
+  modules,
+  newTest,
+  seedApp,
+  signedInAs,
+  type TestConvex,
+} from "./helpers";
 
-// Public functions that must work while signed out, and why.
+// Public functions that don't use the signed-in user, and why.
 const PUBLIC_BY_DESIGN = new Set([
   "auth:signIn", // how you sign in
   "auth:signOut", // a no-op when signed out
   "auth:isAuthenticated", // answers "no" when signed out
+  "vapiWebhook:recordEndOfCallReport", // gated by the webhook secret; see webhook.test.ts
 ]);
 
-// Valid arguments for each guarded function, so the test proves the auth check
-// rejects the call rather than argument validation.
-const SAMPLE_ARGS: Record<string, DefaultFunctionArgs> = {
-  "users:viewer": {},
-  "apps:getBySlug": { slug: "create" },
-  "personas:getDefaultForApp": { slug: "create" },
+type Fixture = { t: TestConvex; userId: Id<"users"> };
+
+// For each guarded function: valid arguments (so the test proves the auth
+// check rejects the call, not argument validation), plus any data the call
+// needs to succeed for its owner.
+const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
+  "users:viewer": async () => ({}),
+  "apps:getBySlug": async () => ({ slug: "create" }),
+  "personas:getDefaultForApp": async () => ({ slug: "create" }),
+  "consents:myRecordingConsent": async () => ({}),
+  "consents:grantRecording": async () => ({ consentText: RECORDING_CONSENT_TEXT }),
+  "calls:start": async ({ t, userId }) => {
+    await seedApp(t);
+    await grantConsent(t, userId);
+    return { mode: "quick" };
+  },
+  "calls:reportClientStatus": async ({ t, userId }) => ({
+    callId: await insertCall(t, userId),
+    status: "connecting",
+  }),
+  "calls:get": async ({ t, userId }) => ({ callId: await insertCall(t, userId) }),
+  "calls:listMine": async () => ({}),
+  "outputs:forCall": async ({ t, userId }) => ({ callId: await insertCall(t, userId) }),
 };
 
 type FunctionKind = "query" | "mutation" | "action";
-type Registered = {
-  isQuery?: boolean;
-  isMutation?: boolean;
-  isAction?: boolean;
-  isPublic?: boolean;
-};
+type Registered = { isQuery?: boolean; isMutation?: boolean; isAction?: boolean; isPublic?: boolean };
 
 async function listPublicFunctions(): Promise<{ name: string; kind: FunctionKind }[]> {
   const found: { name: string; kind: FunctionKind }[] = [];
@@ -33,9 +56,9 @@ async function listPublicFunctions(): Promise<{ name: string; kind: FunctionKind
     const moduleName = path.replace(/^.*\/convex\//, "").replace(/\.(ts|js)$/, "");
     const exports = (await load()) as Record<string, unknown>;
     for (const [exportName, value] of Object.entries(exports)) {
-      if (typeof value !== "function" && typeof value !== "object") continue;
+      if (value === null || (typeof value !== "function" && typeof value !== "object")) continue;
       const fn = value as Registered;
-      if (fn === null || fn.isPublic !== true) continue;
+      if (fn.isPublic !== true) continue;
       const kind: FunctionKind | null = fn.isQuery
         ? "query"
         : fn.isMutation
@@ -50,43 +73,40 @@ async function listPublicFunctions(): Promise<{ name: string; kind: FunctionKind
   return found.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function call(client: Pick<TestConvex, "query" | "mutation" | "action">, name: string, kind: FunctionKind, args: DefaultFunctionArgs) {
+  return kind === "query"
+    ? client.query(makeFunctionReference<"query">(name), args)
+    : kind === "mutation"
+      ? client.mutation(makeFunctionReference<"mutation">(name), args)
+      : client.action(makeFunctionReference<"action">(name), args);
+}
+
 describe("every public Convex function rejects unauthenticated access", async () => {
   const functions = await listPublicFunctions();
   const guarded = functions.filter((fn) => !PUBLIC_BY_DESIGN.has(fn.name));
 
-  test("discovers the Convex Auth functions, so discovery itself works", () => {
+  test("discovery finds the known public functions", () => {
     const names = functions.map((fn) => fn.name);
     for (const name of PUBLIC_BY_DESIGN) expect(names).toContain(name);
   });
 
-  test("every guarded function has sample args in this test", () => {
-    const missing = guarded.map((fn) => fn.name).filter((name) => !(name in SAMPLE_ARGS));
-    expect(missing, "add new public functions to SAMPLE_ARGS").toEqual([]);
+  test("every guarded function has a case in this test", () => {
+    const missing = guarded.map((fn) => fn.name).filter((name) => !(name in CASES));
+    expect(missing, "add new public functions to CASES").toEqual([]);
     expect(guarded.length).toBeGreaterThan(0);
   });
 
   test.each(guarded)("$name ($kind) throws UNAUTHENTICATED when signed out", async ({ name, kind }) => {
     const t = newTest();
-    const args = SAMPLE_ARGS[name] ?? {};
-    const call =
-      kind === "query"
-        ? t.query(makeFunctionReference<"query">(name), args)
-        : kind === "mutation"
-          ? t.mutation(makeFunctionReference<"mutation">(name), args)
-          : t.action(makeFunctionReference<"action">(name), args);
-    await expect(call).rejects.toThrow("UNAUTHENTICATED");
+    const { userId } = await signedInAs(t);
+    const args = await CASES[name]({ t, userId });
+    await expect(call(t, name, kind, args)).rejects.toThrow("UNAUTHENTICATED");
   });
 
-  test.each(guarded)("$name ($kind) works when signed in", async ({ name, kind }) => {
+  test.each(guarded)("$name ($kind) works for the signed-in owner", async ({ name, kind }) => {
     const t = newTest();
-    const { client } = await signedInAs(t);
-    const args = SAMPLE_ARGS[name] ?? {};
-    const call =
-      kind === "query"
-        ? client.query(makeFunctionReference<"query">(name), args)
-        : kind === "mutation"
-          ? client.mutation(makeFunctionReference<"mutation">(name), args)
-          : client.action(makeFunctionReference<"action">(name), args);
-    await expect(call).resolves.not.toThrow();
+    const { userId, client } = await signedInAs(t);
+    const args = await CASES[name]({ t, userId });
+    await expect(call(client, name, kind, args)).resolves.not.toThrow();
   });
 });

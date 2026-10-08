@@ -20,11 +20,13 @@
   "dependencies": {
     "@auth/core": "^0.41.1",
     "@convex-dev/auth": "^0.0.96",
+    "@vapi-ai/web": "^2.7.1",
     "convex": "^1.46.0",
     "lucia": "^3.2.2",
     "next": "15.5.27",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
