@@ -16,7 +16,8 @@ Daily, Voices, Keepsake, Lingo) are meant to be added as rows in the `apps` and
 - Convex Auth with email + password, wired with `ConvexAuthNextjsProvider` and
   `src/middleware.ts` so the auth cookie is visible to the middleware on every
   protected route
-- Vapi for voice (Milestone 2), OpenAI for processing (Milestone 2)
+- Vapi for voice (Web SDK in the browser + server webhook)
+- OpenAI for processing, behind a small provider interface (`convex/lib/llm`)
 
 ## Setup
 
@@ -53,10 +54,11 @@ Vercel, so anything they read has to be set on the Convex deployment:
 | `CONVEX_DEPLOY_KEY` | Vercel only | For `npx convex deploy` in the Vercel build |
 | `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL` | Convex | Set by `npx @convex-dev/auth` |
 | `REMI_ASSISTANT_ID` | Convex | Read by the seed. Not secret |
-| `VAPI_PRIVATE_KEY` | Vercel | Server only (Milestone 2) |
-| `VAPI_PUBLIC_KEY` | Vercel | Served only via `/api/vapi/public-config` (Milestone 2) |
-| `VAPI_WEBHOOK_SECRET` | Vercel + Convex | Webhook verification (Milestone 2) |
-| `OPENAI_API_KEY` | Convex | Processor (Milestone 2) |
+| `VAPI_PRIVATE_KEY` | Vercel | Server only |
+| `VAPI_PUBLIC_KEY` | Vercel | Served only via `/api/vapi/public-config` |
+| `VAPI_WEBHOOK_SECRET` | Vercel + Convex | Webhook verification |
+| `OPENAI_API_KEY` | Convex | Processor |
+| `XAI_API_KEY` | Convex | Optional, only for a persona set to `xai` |
 
 Private keys must never reach client code, logs or API responses.
 
@@ -68,14 +70,43 @@ first message, OpenAI `gpt-4.1-mini` and `maxCallSeconds` 5400. Running it again
 updates the same rows; it never creates duplicates. It refuses to run if
 `REMI_ASSISTANT_ID` isn't set. For production: `npx convex run seed:run --prod`.
 
-## Vapi assistant setup (Milestone 2)
+## Vapi assistant setup
 
 1. Create an assistant in the Vapi dashboard and copy its ID into
-   `REMI_ASSISTANT_ID`.
-2. Set its **Server URL** to `https://<your-domain>/api/vapi/webhook`.
-3. Set the server URL secret to the same value as `VAPI_WEBHOOK_SECRET`.
-4. The system prompt, first message and max duration are sent per call from the
-   app as `assistantOverrides`, so the dashboard copies don't need to match.
+   `REMI_ASSISTANT_ID` (then re-run the seed).
+2. Set its **Server URL** to `https://<your-domain>/api/vapi/webhook` and its
+   server secret to the same value as `VAPI_WEBHOOK_SECRET`. The route accepts
+   the secret as the `x-vapi-secret` header or as a Bearer token.
+3. Make sure `end-of-call-report` is among the assistant's server messages
+   (it is by default).
+4. Set the **silence timeout to 60 seconds** on the assistant. The current Web
+   SDK doesn't accept it as a per-call override, so it lives in the dashboard.
+5. Enable recording on the assistant if you want the recording URL saved.
+
+Per call, the app sends the system prompt (with the mode line, memory block and
+today's focus), first message, model and `maxDurationSeconds` (600 quick, 5400
+deep) as `assistantOverrides`, plus `metadata.call_id` so the webhook can find
+the call. The dashboard's own prompt is overridden.
+
+## How a session flows
+
+1. The user ticks the recording consent once (stored in `consents` with IP and
+   user agent).
+2. **Quick** or **Deep** calls the `startSession` server action, which creates
+   a `queued` call and returns the Vapi config.
+3. Only then does the browser fetch the public key, import `@vapi-ai/web` and
+   start the call (which is when the microphone is requested).
+4. The browser reports `connecting` → `in_session` → `processing` and the Vapi
+   call id. Statuses only move forward.
+5. Vapi posts `end-of-call-report` to `/api/vapi/webhook`. The call gets its
+   transcript, duration, cost, recording URL and end reason, and the processor
+   is scheduled. Unknown calls are ignored; repeat deliveries are no-ops. If no
+   report arrives within 10 minutes of the call ending, the call is marked
+   failed.
+6. The processor (`convex/processor.ts`) sends the transcript to the persona's
+   LLM. Sessions over ~30 minutes are condensed in chunks first. The JSON reply
+   is validated and retried once if invalid. Posts and scripts whose
+   `source_excerpt` isn't something the user actually said are dropped.
 
 ## Deploying to Vercel
 

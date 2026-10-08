@@ -11,6 +11,26 @@ export const outputKind = v.union(
   v.literal("idea"),
 );
 
+export const callMode = v.union(v.literal("quick"), v.literal("deep"));
+
+export const callStatus = v.union(
+  v.literal("queued"),
+  v.literal("connecting"),
+  v.literal("in_session"),
+  v.literal("processing"),
+  v.literal("completed"),
+  v.literal("missed"),
+  v.literal("failed"),
+);
+
+export const memoryKind = v.union(
+  v.literal("fact"),
+  v.literal("goal"),
+  v.literal("open_thread"),
+  v.literal("idea"),
+  v.literal("theme"),
+);
+
 export const llmProvider = v.union(
   v.literal("openai"),
   v.literal("anthropic"),
@@ -116,17 +136,9 @@ export default defineSchema({
     userId: v.id("users"),
     appId: v.id("apps"),
     personaId: v.id("personas"),
-    mode: v.union(v.literal("quick"), v.literal("deep")),
+    mode: callMode,
     channel: v.union(v.literal("web"), v.literal("phone")),
-    status: v.union(
-      v.literal("queued"),
-      v.literal("connecting"),
-      v.literal("in_session"),
-      v.literal("processing"),
-      v.literal("completed"),
-      v.literal("missed"),
-      v.literal("failed"),
-    ),
+    status: callStatus,
     focus: v.optional(v.string()),
     vapiCallId: v.optional(v.string()),
     startedAt: v.optional(v.number()),
@@ -136,6 +148,8 @@ export default defineSchema({
     transcript: v.optional(v.string()),
     recordingUrl: v.optional(v.string()),
     endReason: v.optional(v.string()),
+    reportReceivedAt: v.optional(v.number()), // set once by the Vapi webhook
+    processingError: v.optional(v.string()),
     sensitive: v.boolean(),
   })
     .index("by_user", ["userId"])
@@ -147,13 +161,7 @@ export default defineSchema({
     userId: v.id("users"),
     appId: v.id("apps"),
     callId: v.optional(v.id("calls")),
-    kind: v.union(
-      v.literal("fact"),
-      v.literal("goal"),
-      v.literal("open_thread"),
-      v.literal("idea"),
-      v.literal("theme"),
-    ),
+    kind: memoryKind,
     content: v.string(),
     importance: v.number(), // 1–5
     sensitive: v.boolean(),
