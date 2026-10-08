@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dialed
 
-## Getting Started
+Working codename. The product name lives in one place: `src/config/brand.ts`.
 
-First, run the development server:
+Dialed is a desktop-first web app where an AI voice interviewer has spoken
+conversations with you, remembers them across sessions, and turns each one into
+a private summary, big-picture themes and content drafts in your own words. The
+first app is **Dialed Create**, with Remi as the interviewer. Other apps (Coach,
+Daily, Voices, Keepsake, Lingo) are meant to be added as rows in the `apps` and
+`personas` tables, not as new code.
+
+## Stack
+
+- Next.js 15 (App Router, TypeScript strict), deployed on Vercel
+- Convex for the database, server functions, crons and HTTP endpoints
+- Convex Auth with email + password, wired with `ConvexAuthNextjsProvider` and
+  `src/middleware.ts` so the auth cookie is visible to the middleware on every
+  protected route
+- Vapi for voice (Milestone 2), OpenAI for processing (Milestone 2)
+
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local
+
+# 1. Create or link a Convex project. This writes CONVEX_DEPLOYMENT and
+#    NEXT_PUBLIC_CONVEX_URL to .env.local and pushes the functions.
+npx convex dev --once
+
+# 2. Configure Convex Auth on the deployment (generates JWT_PRIVATE_KEY and
+#    JWKS, and asks for SITE_URL, e.g. http://localhost:3000).
+npx @convex-dev/auth
+
+# 3. Seed the Create app and the Remi persona (see "Seed" below).
+npx convex env set REMI_ASSISTANT_ID <your-vapi-assistant-id>
+npm run seed
+
+# 4. Run Next.js and Convex together.
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000, create an account, and you land on `/app/session`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All of them are listed in `.env.example`. Convex functions run on Convex, not
+Vercel, so anything they read has to be set on the Convex deployment:
 
-## Learn More
+| Variable | Where | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | Vercel + `.env.local` | Written by `npx convex dev` |
+| `CONVEX_DEPLOY_KEY` | Vercel only | For `npx convex deploy` in the Vercel build |
+| `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL` | Convex | Set by `npx @convex-dev/auth` |
+| `REMI_ASSISTANT_ID` | Convex | Read by the seed. Not secret |
+| `VAPI_PRIVATE_KEY` | Vercel | Server only (Milestone 2) |
+| `VAPI_PUBLIC_KEY` | Vercel | Served only via `/api/vapi/public-config` (Milestone 2) |
+| `VAPI_WEBHOOK_SECRET` | Vercel + Convex | Webhook verification (Milestone 2) |
+| `OPENAI_API_KEY` | Convex | Processor (Milestone 2) |
 
-To learn more about Next.js, take a look at the following resources:
+Private keys must never reach client code, logs or API responses.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Seed
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`npm run seed` runs the internal mutation `seed:run`. It upserts the `create`
+app by slug and the "Remi" persona by (app, name), with Remi's system prompt,
+first message, OpenAI `gpt-4.1-mini` and `maxCallSeconds` 5400. Running it again
+updates the same rows; it never creates duplicates. It refuses to run if
+`REMI_ASSISTANT_ID` isn't set. For production: `npx convex run seed:run --prod`.
 
-## Deploy on Vercel
+## Vapi assistant setup (Milestone 2)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Create an assistant in the Vapi dashboard and copy its ID into
+   `REMI_ASSISTANT_ID`.
+2. Set its **Server URL** to `https://<your-domain>/api/vapi/webhook`.
+3. Set the server URL secret to the same value as `VAPI_WEBHOOK_SECRET`.
+4. The system prompt, first message and max duration are sent per call from the
+   app as `assistantOverrides`, so the dashboard copies don't need to match.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploying to Vercel
+
+Set the build command to `npx convex deploy --cmd 'npm run build'` and add
+`CONVEX_DEPLOY_KEY` (from the Convex dashboard) to the Vercel project. Run
+`npx @convex-dev/auth --prod` once to configure auth on the production
+deployment, then seed it.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Next.js and `convex dev` together |
+| `npm run check` | Type checks, lint, unit + Convex tests, production build |
+| `npm test` | Vitest: Convex functions (via `convex-test`) and unit tests |
+| `npm run test:e2e` | Playwright against `npm run start` (run `npm run build` first) |
+| `npm run codegen` | Regenerate `convex/_generated` without a deployment |
+| `npm run seed` | Idempotent seed |
+
+The end-to-end auth flow (`tests/e2e/auth-flow.spec.ts`) needs a real Convex
+deployment and runs only with `E2E_LIVE_CONVEX=1`. The gating tests in
+`tests/e2e/auth-gating.spec.ts` run without one.
+
+## Project layout
+
+```
+convex/                 schema, auth, seed and server functions
+  lib/auth.ts           requireUserId(): the only way functions learn who's calling
+  passwordProvider.ts   email + password with stable error codes for the forms
+src/config/brand.ts     the product name
+src/middleware.ts       protects /app/*, bounces signed-in users off /sign-in
+src/app/(auth)/         sign-in and sign-up
+src/app/app/            the signed-in app
+tests/                  convex/, unit/, e2e/
+```
+
+## Rules the code follows
+
+- Every public Convex function derives the user from the auth identity and never
+  takes a user ID from the client. `tests/convex/unauthenticated.test.ts`
+  discovers every public function and fails if one doesn't reject signed-out
+  calls.
+- No page loads the Vapi SDK or requests the microphone until the user clicks
+  Start.
+- No email is sent by the app yet (no verification or password reset).
