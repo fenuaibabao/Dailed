@@ -80,8 +80,9 @@ I don't want to break any laws. Have legal review before launch.
   - #2 Password show/hide toggle plus confirm-password field on sign-up.
   - #3 `.mcp.json` with Vercel and Convex MCP (dev only).
   - #4 Section 0: preview builds never use the prod Convex key; `BRAND_NAME = "Warpwork"`. First green preview. Production deploys re-run the seed, so Remi's greeting and the app name follow `BRAND_NAME`.
-- Open, waiting on my OK to merge: **#5, section 1 (grounding)**. Preview is green. This PR also adds this primer and `CLAUDE.md`.
-- The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5).
+  - #5 Section 1: close-match grounding (`convex/lib/grounding.ts`), at least one post and one script per session of 2+ minutes or a recorded reason, per-session grounding counts. Also added this primer and `CLAUDE.md`.
+- Next: **section 2 (products as configuration)**, waiting on my OK to start.
+- The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
 ## 6. Roadmap (in order)
