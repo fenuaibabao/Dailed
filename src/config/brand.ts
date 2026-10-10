@@ -1,9 +1,12 @@
 /**
- * The product name is a working codename. Change it here and nowhere else:
- * the UI, page titles, the Convex seed and Remi's prompt all read from this file.
+ * The product name. Change it here and nowhere else: the UI, page titles, the
+ * Convex seed and Remi's prompt all read from this file. Production deploys
+ * re-run the seed, so the stored app name and Remi's prompt follow it.
  */
+export const BRAND_NAME = "Warpwork";
+
 export const BRAND = {
-  name: "Dialed",
+  name: BRAND_NAME,
   tagline: "Talk it through. Get drafts in your own words.",
 } as const;
 

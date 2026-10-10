@@ -1,6 +1,6 @@
-# Dialed
+# Warpwork
 
-Working codename. The product name lives in one place: `src/config/brand.ts`.
+The product name lives in one place: `BRAND_NAME` in `src/config/brand.ts`.
 
 Dialed is a desktop-first web app where an AI voice interviewer has spoken
 conversations with you, remembers them across sessions, and turns each one into
@@ -110,10 +110,24 @@ the call. The dashboard's own prompt is overridden.
 
 ## Deploying to Vercel
 
-Set the build command to `npx convex deploy --cmd 'npm run build'` and add
-`CONVEX_DEPLOY_KEY` (from the Convex dashboard) to the Vercel project. Run
+`vercel.json` sets the build command to `node scripts/vercel-build.mjs`, which
+overrides whatever the Vercel dashboard says. Add `CONVEX_DEPLOY_KEY` (the
+production deploy key from the Convex dashboard) to the Vercel project. Run
 `npx @convex-dev/auth --prod` once to configure auth on the production
-deployment, then seed it.
+deployment.
+
+What the build script does:
+
+- **Production:** `npx convex deploy --cmd 'npm run build'`, then
+  `npx convex run seed:run` so the app and Remi rows follow config changes
+  such as the brand name. A failed seed is logged but doesn't fail the deploy.
+- **Preview with a Convex preview or dev deploy key:** deploys to that
+  deployment, then builds.
+- **Preview with only the production key:** builds the site alone against
+  `NEXT_PUBLIC_CONVEX_URL` (or else the production deployment's URL) and pushes
+  no Convex functions. The production key is removed from the build's
+  environment. Such a preview shares production data and runs `main`'s
+  backend code, so it's for checking UI changes.
 
 ## Scripts
 
