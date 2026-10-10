@@ -127,6 +127,12 @@ the call. The dashboard's own prompt is overridden.
    script; if there's still none, the reason is saved as `calls.noDraftsReason`.
    Counts are saved as `calls.grounding`, and logged when the deployment has
    `GROUNDING_LOGS=1` (set it on dev only).
+7. Weaving (`convex/weaves.ts`) is scheduled once the results are saved. The
+   session's summary and themes, plus the person's existing weaves in that
+   product (as short refs like `w1`, never ids), go to the persona's LLM, which
+   says which weaves the session continues or starts (up to 3). Each session
+   is woven once (`calls.wovenAt`), and a failure leaves the drafts alone.
+   Sensitive sessions only join sensitive weaves.
 
 ## Deploying to Vercel
 

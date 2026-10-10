@@ -53,11 +53,15 @@ function openAIReply(content: string) {
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  // Saving results schedules weaving; fake timers keep it from running in the
+  // background of these tests (weaves.test.ts covers it).
+  vi.useFakeTimers();
   process.env.OPENAI_API_KEY = "sk-test";
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   delete process.env.OPENAI_API_KEY;
 });

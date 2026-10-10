@@ -8,6 +8,7 @@ import { RECORDING_CONSENT_TEXT } from "@/lib/consent";
 import { grantRecordingConsent } from "./actions";
 import { SessionResults } from "./SessionResults";
 import { useVapiSession } from "./useVapiSession";
+import { WeavesList } from "./WeavesList";
 
 type Status = Doc<"calls">["status"];
 
@@ -198,6 +199,8 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
             </ul>
           )}
         </section>
+
+        <WeavesList product={product.slug} shownCallId={shownCallId} onSelectCall={setSelectedCallId} />
       </div>
 
       <div className="min-w-0">

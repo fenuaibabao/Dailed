@@ -162,7 +162,7 @@ export class ProcessingError extends Error {
 }
 
 /** Parses and validates; on bad output asks the model once more, then gives up. */
-async function completeValidated<T>(
+export async function completeValidated<T>(
   llm: LlmProvider,
   request: { model: string; system: string; user: string },
   schema: z.ZodType<T>,

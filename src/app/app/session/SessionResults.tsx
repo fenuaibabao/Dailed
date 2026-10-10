@@ -14,6 +14,7 @@ const DRAFT_SECTIONS = [
 
 export function SessionResults({ callId }: { callId: Id<"calls"> }) {
   const outputs = useQuery(api.outputs.forCall, { callId });
+  const weaves = useQuery(api.weaves.forCall, { callId });
   if (outputs === undefined) return <p className="text-muted">Loading results…</p>;
   if (outputs.length === 0) return <p className="text-muted">No drafts for this session.</p>;
 
@@ -29,6 +30,20 @@ export function SessionResults({ callId }: { callId: Id<"calls"> }) {
             <CopyButton text={summary.body} />
           </div>
           <p className="mt-2 leading-relaxed">{summary.body}</p>
+        </section>
+      )}
+
+      {weaves !== undefined && weaves.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold">Part of</h2>
+          <ul className="mt-2 flex flex-wrap gap-2" aria-label="Weaves this session belongs to">
+            {weaves.map((w) => (
+              <li key={w._id} title={w.note} className="rounded-full border border-border bg-surface px-3 py-1 text-sm">
+                {w.title}
+                {w.sessionCount > 1 && <span className="text-muted"> · {w.sessionCount} sessions</span>}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

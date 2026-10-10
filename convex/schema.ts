@@ -162,6 +162,7 @@ export default defineSchema({
       }),
     ),
     noDraftsReason: v.optional(v.string()), // set when a long enough session got no post or no script
+    wovenAt: v.optional(v.number()), // set once the session has been grouped into Weaves
     sensitive: v.boolean(),
   })
     .index("by_user", ["userId"])
@@ -203,4 +204,30 @@ export default defineSchema({
     .index("by_call", ["callId"])
     .index("by_user_kind", ["userId", "kind"])
     .index("by_user_status", ["userId", "status"]),
+
+  // Weaves: ongoing topics that come up across a person's sessions in one
+  // product, like "Launching the podcast". Grouped automatically after each
+  // session. Sensitive sessions only join sensitive weaves.
+  weaves: defineTable({
+    userId: v.id("users"),
+    appId: v.id("apps"),
+    title: v.string(),
+    summary: v.string(),
+    sessionCount: v.number(),
+    lastCallId: v.id("calls"),
+    updatedAt: v.number(),
+    sensitive: v.boolean(),
+  })
+    .index("by_user_app_updated", ["userId", "appId", "updatedAt"])
+    .index("by_user_app_sensitive_updated", ["userId", "appId", "sensitive", "updatedAt"]),
+
+  // Which sessions belong to which weave, with what each session added.
+  weaveLinks: defineTable({
+    weaveId: v.id("weaves"),
+    callId: v.id("calls"),
+    userId: v.id("users"),
+    note: v.string(),
+  })
+    .index("by_weave", ["weaveId"])
+    .index("by_call", ["callId"]),
 });
