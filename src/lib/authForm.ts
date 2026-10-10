@@ -37,3 +37,11 @@ export function validateAuthForm(
   }
   return errors;
 }
+
+export const PASSWORD_MISMATCH_MESSAGE = "Passwords don't match.";
+
+// Sign-up only. The confirmation never leaves the browser; it only guards
+// against a typo in the password the server does receive.
+export function confirmPasswordError(password: string, confirmation: string): string | null {
+  return password === confirmation ? null : PASSWORD_MISMATCH_MESSAGE;
+}

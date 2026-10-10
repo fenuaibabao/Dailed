@@ -23,7 +23,8 @@ test("sign-up shows inline errors for every bad field and doesn't submit", async
   });
   await page.goto("/sign-up");
   await page.getByLabel("Email").fill("not-an-email");
-  await page.getByLabel("Password").fill("short");
+  await page.getByLabel("Password", { exact: true }).fill("short");
+  await page.getByLabel("Confirm password").fill("short");
   await page.getByRole("button", { name: "Create account" }).click();
 
   await expect(page.getByText("Enter your name.")).toBeVisible();
@@ -31,6 +32,87 @@ test("sign-up shows inline errors for every bad field and doesn't submit", async
   await expect(page.getByText("Use at least 8 characters.")).toBeVisible();
   await expect(page.getByLabel("Email")).toHaveAttribute("aria-invalid", "true");
   expect(authCalls).toEqual([]);
+});
+
+for (const path of ["/sign-in", "/sign-up"]) {
+  test(`${path} password fields have a show/hide toggle that doesn't submit`, async ({ page }) => {
+    const authCalls: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/api/auth")) authCalls.push(r.url());
+    });
+    await page.goto(path);
+    const fields = path === "/sign-up" ? ["Password", "Confirm password"] : ["Password"];
+    await expect(page.getByRole("button", { name: "Show password" })).toHaveCount(fields.length);
+
+    for (const label of fields) {
+      const input = page.getByLabel(label, { exact: true });
+      await input.fill("secret123");
+      await expect(input).toHaveAttribute("type", "password");
+
+      const toggle = page.locator(`button[aria-controls="${await input.getAttribute("id")}"]`);
+      await expect(toggle).toHaveAttribute("type", "button");
+      await expect(toggle).toHaveAccessibleName("Show password");
+      await expect(toggle.locator("[data-icon=eye]")).toHaveCount(1);
+
+      await toggle.click();
+      await expect(input).toHaveAttribute("type", "text");
+      await expect(input).toHaveValue("secret123");
+      await expect(toggle).toHaveAccessibleName("Hide password");
+      await expect(toggle.locator("[data-icon=eye-off]")).toHaveCount(1);
+
+      // Keyboard: focus the toggle and press Enter, then Space.
+      await toggle.focus();
+      await page.keyboard.press("Enter");
+      await expect(input).toHaveAttribute("type", "password");
+      await page.keyboard.press("Space");
+      await expect(input).toHaveAttribute("type", "text");
+      await page.keyboard.press("Space");
+      await expect(input).toHaveAttribute("type", "password");
+    }
+    expect(authCalls).toEqual([]);
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+  });
+}
+
+test("sign-up flags mismatched passwords on blur and keeps submit disabled until they match", async ({ page }) => {
+  await page.goto("/sign-up");
+  const submit = page.getByRole("button", { name: "Create account" });
+  const confirm = page.getByLabel("Confirm password");
+
+  await page.getByLabel("Password", { exact: true }).fill("correct1horse");
+  await confirm.fill("correct1hors");
+  await expect(page.getByText("Passwords don't match.")).toHaveCount(0);
+  await expect(submit).toBeDisabled();
+
+  await confirm.blur();
+  await expect(page.getByText("Passwords don't match.")).toBeVisible();
+  await expect(confirm).toHaveAttribute("aria-invalid", "true");
+  await expect(confirm).toHaveAttribute("aria-describedby", "confirm-password-error");
+
+  await confirm.fill("correct1horse");
+  await expect(page.getByText("Passwords don't match.")).toHaveCount(0);
+  await expect(submit).toBeEnabled();
+});
+
+test("sign-up sends only the first password, never the confirmation", async ({ page }) => {
+  const bodies: string[] = [];
+  await page.route("**/api/auth", async (route) => {
+    bodies.push(route.request().postData() ?? "");
+    await route.fulfill({ status: 500, body: "stubbed" });
+  });
+  await page.goto("/sign-up");
+  await page.getByLabel("Name").fill("Test Creator");
+  await page.getByLabel("Email").fill("ada@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("correct1horse");
+  await page.getByLabel("Confirm password").fill("correct1horse");
+  await page.getByRole("button", { name: "Create account" }).click();
+
+  // The stubbed failure surfaces as the existing form-level error.
+  await expect(page.getByText("Something went wrong on our side.")).toBeVisible();
+  expect(bodies).toHaveLength(1);
+  expect(bodies[0]).toContain("correct1horse");
+  expect(bodies[0].split("correct1horse")).toHaveLength(2);
+  expect(bodies[0]).not.toMatch(/confirm/i);
 });
 
 test("sign-in links to sign-up and back", async ({ page }) => {
