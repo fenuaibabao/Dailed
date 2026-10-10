@@ -6,6 +6,8 @@ import {
 } from "../../convex/lib/processing";
 import { buildSessionPrompt } from "../../convex/lib/sessionPrompt";
 import { MAX_WEAVES_PER_SESSION, buildWeaveInput, resolveAssignments } from "../../convex/lib/weaving";
+import { BAA_COVERED_VENDORS, missingBaas } from "../../convex/lib/phi";
+import { atLeast, canRemove } from "../../convex/lib/roles";
 
 describe("transcript helpers", () => {
   test("chunks on line boundaries without losing text", () => {
@@ -73,5 +75,24 @@ describe("weaving", () => {
     });
     expect(input).toContain("w1: Podcast. About the show.");
     expect(input).not.toContain("secret-id");
+  });
+});
+
+describe("roles and health-data mode", () => {
+  test("role ranks and who can remove whom", () => {
+    expect(atLeast("owner", "admin")).toBe(true);
+    expect(atLeast("admin", "owner")).toBe(false);
+    expect(atLeast("member", "member")).toBe(true);
+    expect(canRemove("admin", "member")).toBe(true);
+    expect(canRemove("admin", "admin")).toBe(false);
+    expect(canRemove("owner", "admin")).toBe(true);
+    expect(canRemove("member", "member")).toBe(false);
+  });
+
+  test("health-data sessions need a BAA from every vendor in the path", () => {
+    expect(BAA_COVERED_VENDORS).toEqual([]);
+    expect(missingBaas("openai")).toEqual(["vapi", "convex", "vercel", "openai"]);
+    expect(missingBaas("openai", ["vapi", "convex", "vercel"])).toEqual(["openai"]);
+    expect(missingBaas("openai", ["vapi", "convex", "vercel", "openai"])).toEqual([]);
   });
 });

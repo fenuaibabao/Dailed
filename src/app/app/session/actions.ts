@@ -13,6 +13,7 @@ const KNOWN_ERRORS = [
   "RECORDING_CONSENT_REQUIRED",
   "APP_NOT_SEEDED",
   "PRODUCT_UNAVAILABLE",
+  "PHI_NOT_READY",
 ] as const;
 export type ActionErrorCode = (typeof KNOWN_ERRORS)[number] | "UNKNOWN";
 

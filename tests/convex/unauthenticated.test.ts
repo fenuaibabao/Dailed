@@ -49,7 +49,52 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
     return { product: "create" };
   },
   "weaves:forCall": async ({ t, userId }) => ({ callId: await insertCall(t, userId) }),
+  "orgs:listMine": async () => ({}),
+  "orgs:get": async (f) => ({ orgId: await ownedOrg(f) }),
+  "orgs:create": async () => ({ name: "Acme" }),
+  "orgs:rename": async (f) => ({ orgId: await ownedOrg(f), name: "Acme 2" }),
+  "orgs:join": async ({ t }) => {
+    const { userId: other } = await signedInAs(t, "Owner");
+    const orgId = await ownedOrg({ t, userId: other });
+    return { code: (await t.run((ctx) => ctx.db.get(orgId)))!.inviteCode };
+  },
+  "orgs:resetInviteCode": async (f) => ({ orgId: await ownedOrg(f) }),
+  "orgs:setRole": async (f) => {
+    const orgId = await ownedOrg(f);
+    return { orgId, userId: await memberOf(f.t, orgId), role: "admin" };
+  },
+  "orgs:removeMember": async (f) => {
+    const orgId = await ownedOrg(f);
+    return { orgId, userId: await memberOf(f.t, orgId) };
+  },
+  "orgs:leave": async (f) => {
+    const orgId = await ownedOrg(f);
+    await addOwner(f.t, orgId);
+    return { orgId };
+  },
+  "orgs:setPhiMode": async (f) => ({ orgId: await ownedOrg(f), on: true }),
+  "orgs:setActive": async (f) => ({ orgId: await ownedOrg(f) }),
 };
+
+/** A workspace owned by the fixture's user. */
+async function ownedOrg({ t, userId }: Fixture): Promise<Id<"orgs">> {
+  return await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("orgs", { name: "Acme", createdBy: userId, phiMode: false, inviteCode: "ABCDEFGHJK" });
+    await ctx.db.insert("memberships", { orgId, userId, role: "owner", joinedAt: 0 });
+    return orgId;
+  });
+}
+
+async function memberOf(t: TestConvex, orgId: Id<"orgs">, role: "member" | "owner" = "member") {
+  const { userId } = await signedInAs(t, `Member${Math.random().toString(36).slice(2, 7)}`);
+  await t.run((ctx) => ctx.db.insert("memberships", { orgId, userId, role, joinedAt: 0 }));
+  return userId;
+}
+
+/** A second owner, so the first can leave. */
+async function addOwner(t: TestConvex, orgId: Id<"orgs">) {
+  return await memberOf(t, orgId, "owner");
+}
 
 type FunctionKind = "query" | "mutation" | "action";
 type Registered = { isQuery?: boolean; isMutation?: boolean; isAction?: boolean; isPublic?: boolean };

@@ -33,6 +33,8 @@ export const memoryKind = v.union(
   v.literal("theme"),
 );
 
+export const orgRole = v.union(v.literal("owner"), v.literal("admin"), v.literal("member"));
+
 export const llmProvider = v.union(
   v.literal("openai"),
   v.literal("anthropic"),
@@ -55,6 +57,7 @@ export default defineSchema({
     phoneE164: v.optional(v.string()),
     timezone: v.optional(v.string()), // IANA name, captured at sign-up
     dateOfBirth: v.optional(v.string()), // YYYY-MM-DD
+    activeOrgId: v.optional(v.id("orgs")), // the workspace new sessions belong to; none = personal
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),
@@ -136,6 +139,7 @@ export default defineSchema({
 
   calls: defineTable({
     userId: v.id("users"),
+    orgId: v.optional(v.id("orgs")), // the workspace the session ran in; none = personal
     appId: v.id("apps"),
     personaId: v.id("personas"),
     mode: callMode,
@@ -230,4 +234,25 @@ export default defineSchema({
   })
     .index("by_weave", ["weaveId"])
     .index("by_call", ["callId"]),
+
+  // Workspaces for teams (a company, a clinic). Personal use needs none.
+  orgs: defineTable({
+    name: v.string(),
+    createdBy: v.id("users"),
+    // Health-data mode: stricter handling for protected health information.
+    // Sessions are blocked until every vendor in the path is covered by a BAA
+    // (see convex/lib/phi.ts).
+    phiMode: v.boolean(),
+    inviteCode: v.string(), // shared by admins; joining needs no email
+  }).index("by_invite_code", ["inviteCode"]),
+
+  memberships: defineTable({
+    orgId: v.id("orgs"),
+    userId: v.id("users"),
+    role: orgRole,
+    joinedAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_user", ["userId"])
+    .index("by_org_user", ["orgId", "userId"]),
 });
