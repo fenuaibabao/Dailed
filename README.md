@@ -105,8 +105,14 @@ the call. The dashboard's own prompt is overridden.
    failed.
 6. The processor (`convex/processor.ts`) sends the transcript to the persona's
    LLM. Sessions over ~30 minutes are condensed in chunks first. The JSON reply
-   is validated and retried once if invalid. Posts and scripts whose
-   `source_excerpt` isn't something the user actually said are dropped.
+   is validated and retried once if invalid. Each post or script quote is
+   checked against the user's lines (`convex/lib/grounding.ts`): kept if it
+   matches, replaced with the user's own words if it's about 85% similar or a
+   clear paraphrase of one moment, and removed otherwise (the draft stays).
+   Sessions of 2 minutes or more are asked once more if they get no post or no
+   script; if there's still none, the reason is saved as `calls.noDraftsReason`.
+   Counts are saved as `calls.grounding`, and logged when the deployment has
+   `GROUNDING_LOGS=1` (set it on dev only).
 
 ## Deploying to Vercel
 

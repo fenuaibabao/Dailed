@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { groundQuote } from "./grounding";
 import type { LlmProvider } from "./llm";
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ export const sessionResultSchema = z.object({
   newsletter: newsletterSchema.nullable().optional(),
   ideas: z.array(z.string().trim().min(1)).default([]),
   memories: z.array(memorySchema).default([]),
+  no_drafts_reason: z.string().trim().min(1).max(500).nullable().optional(),
 });
 
 export type SessionResult = z.infer<typeof sessionResultSchema>;
@@ -102,71 +104,6 @@ export function userSpeech(transcript: string): string {
   return parts.join("\n");
 }
 
-// Transcribers and models disagree on fillers; they never carry meaning here.
-const FILLER_WORDS = new Set(["um", "umm", "uh", "uhh", "er", "erm", "ah", "hmm", "mm", "mhm"]);
-
-type Token = { norm: string; start: number; end: number };
-
-/** Words with their offsets in the original text, ignoring case, punctuation and fillers. */
-function tokenize(text: string): Token[] {
-  const tokens: Token[] = [];
-  for (const match of text.matchAll(/[a-z0-9'‘’]+/gi)) {
-    const norm = match[0].toLowerCase().replace(/[‘’]/g, "'").replace(/^'+|'+$/g, "");
-    if (norm === "" || FILLER_WORDS.has(norm)) continue;
-    tokens.push({ norm, start: match.index, end: match.index + match[0].length });
-  }
-  return tokens;
-}
-
-/** Shortest excerpt that counts at all. */
-export const MIN_EXCERPT_WORDS = 4;
-/** A partial match must still be this long a run of the user's own words. */
-export const MIN_REPAIRED_WORDS = 8;
-
-/**
- * Returns what the user actually said that backs the excerpt, or null.
- *
- * The excerpt counts when it appears word for word in their speech (ignoring
- * case, punctuation and filler words). Models often quote a long passage with
- * one word changed or a clause trimmed; then the longest run of the excerpt
- * that the user really said counts if it is at least MIN_REPAIRED_WORDS long.
- * Either way the returned text is copied from the user's speech, never from
- * the model.
- */
-export function groundExcerpt(excerpt: string, speech: string): string | null {
-  const needle = tokenize(excerpt).map((t) => t.norm);
-  if (needle.length < MIN_EXCERPT_WORDS) return null;
-  const hay = tokenize(speech);
-
-  // Longest common run of words (dynamic programming over one row).
-  let best = 0;
-  let bestEnd = -1; // index in hay of the run's last word
-  let prev = new Array<number>(needle.length + 1).fill(0);
-  for (let i = 0; i < hay.length; i++) {
-    const row = new Array<number>(needle.length + 1).fill(0);
-    for (let j = 0; j < needle.length; j++) {
-      if (hay[i].norm === needle[j]) {
-        row[j + 1] = prev[j] + 1;
-        if (row[j + 1] > best) {
-          best = row[j + 1];
-          bestEnd = i;
-        }
-      }
-    }
-    prev = row;
-  }
-
-  if (best < needle.length && best < MIN_REPAIRED_WORDS) return null;
-  const first = hay[bestEnd - best + 1];
-  const last = hay[bestEnd];
-  return speech.slice(first.start, last.end).replace(/\s+/g, " ").trim();
-}
-
-/** True when the excerpt is backed by something the user actually said. */
-export function isGroundedExcerpt(excerpt: string, speech: string): boolean {
-  return groundExcerpt(excerpt, speech) !== null;
-}
-
 // ---------------------------------------------------------------------------
 // Prompts
 // ---------------------------------------------------------------------------
@@ -175,8 +112,8 @@ const GROUNDING_RULES = `Hard rules:
 - Use only what the USER said in the transcript. Never invent facts, numbers, names, stories, results or opinions they did not express.
 - Write drafts in the user's own voice and phrasing, as if they wrote them.
 - Every post and script must include "source_excerpt": a passage copied word for word from the user's own lines (at least 8 words) that the draft is built on.
-- Copy each "source_excerpt" character for character from one of the user's lines. Don't fix grammar, drop words or join separate lines.
-- If there isn't enough material for something, return fewer items or an empty list. Fewer honest drafts beat more invented ones. But if the user shared even one concrete story, opinion, lesson or plan, write at least one post and one script from it.
+- Copy each "source_excerpt" from one of the user's lines as closely as you can. Don't fix grammar or join separate lines.
+- If there isn't enough material for something, return fewer items or an empty list. Fewer honest drafts beat more invented ones.
 - Ignore the interviewer's (AI's) lines as a source of content; they are only context.`;
 
 export const FINAL_SYSTEM_PROMPT = `You turn an interview transcript into a private session summary, themes and content drafts for the person who was interviewed.
@@ -191,8 +128,10 @@ Return one JSON object with exactly these keys:
   "scripts": [{ "title": string, "hook": string, "beats": [string, string, string], "close": string, "source_excerpt": string }],     // up to 2 short-video scripts, under 60 seconds spoken
   "newsletter": { "title": string, "body": string } | null,    // only if there is enough material for a real newsletter, otherwise null
   "ideas": string[],                // seeds for future sessions: topics or questions worth exploring next time
-  "memories": [{ "kind": "fact" | "goal" | "open_thread" | "idea" | "theme", "content": string, "importance": 1 | 2 | 3 | 4 | 5 }]  // what the interviewer should remember next time; 5 = central to who they are or what they're doing
+  "memories": [{ "kind": "fact" | "goal" | "open_thread" | "idea" | "theme", "content": string, "importance": 1 | 2 | 3 | 4 | 5 }],  // what the interviewer should remember next time; 5 = central to who they are or what they're doing
+  "no_drafts_reason": string | null  // null whenever you return at least one post and one script; otherwise one sentence on why there was nothing usable
 }
+Write at least one post and one script whenever the user shared anything concrete: a story, an opinion, a lesson, a plan or a decision. Leave posts or scripts empty only when there is truly nothing usable, and then say why in "no_drafts_reason".
 Return JSON only.`;
 
 export const CHUNK_SYSTEM_PROMPT = `You are condensing one part of a long interview transcript so it can be summarized later.
@@ -253,12 +192,21 @@ async function completeValidated<T>(
 export type ProcessedSession = {
   summary: string;
   themes: string[];
-  posts: { platform?: string; title?: string; body: string; sourceExcerpt: string }[];
-  scripts: { title?: string; body: string; sourceExcerpt: string }[];
+  posts: { platform?: string; title?: string; body: string; sourceExcerpt?: string }[];
+  scripts: { title?: string; body: string; sourceExcerpt?: string }[];
   newsletter: { title: string; body: string } | null;
   ideas: string[];
   memories: SessionResult["memories"];
-  droppedUngrounded: number;
+  grounding: GroundingStats;
+  noDraftsReason: string | null;
+};
+
+/** Per-session counts of what the quote check did. */
+export type GroundingStats = {
+  drafts: number;
+  quotesKept: number;
+  quotesFixed: number;
+  quotesDropped: number;
 };
 
 export function formatScript(script: SessionResult["scripts"][number]): string {
@@ -266,50 +214,67 @@ export function formatScript(script: SessionResult["scripts"][number]): string {
   return `Hook: ${script.hook}\n\n${beats}\n\nClose: ${script.close}`;
 }
 
-/** Applies caps, the grounding check and the sensitive-session rule. */
+/**
+ * Applies caps, the quote check and the sensitive-session rule. A quote that
+ * isn't backed by the user's words is fixed or removed; the draft stays.
+ */
 export function finalizeResult(
   result: SessionResult,
   transcript: string,
   sensitive: boolean,
 ): ProcessedSession {
   const speech = userSpeech(transcript);
-  let dropped = 0;
-  function grounded<T extends { source_excerpt: string }>(items: T[]) {
-    if (sensitive) return [];
-    const kept: (T & { grounded: string })[] = [];
-    for (const item of items) {
-      const excerpt = groundExcerpt(item.source_excerpt, speech);
-      if (excerpt === null) dropped++;
-      else kept.push({ ...item, grounded: excerpt });
-    }
-    return kept;
+  const posts = sensitive ? [] : result.posts.slice(0, LIMITS.posts);
+  const scripts = sensitive ? [] : result.scripts.slice(0, LIMITS.scripts);
+  const grounding: GroundingStats = {
+    drafts: posts.length + scripts.length,
+    quotesKept: 0,
+    quotesFixed: 0,
+    quotesDropped: 0,
+  };
+  function checkQuote(quote: string): string | undefined {
+    const outcome = groundQuote(quote, speech);
+    if (outcome.status === "kept") grounding.quotesKept++;
+    else if (outcome.status === "fixed") grounding.quotesFixed++;
+    else grounding.quotesDropped++;
+    return outcome.status === "dropped" ? undefined : outcome.excerpt;
   }
-  const posts = grounded(result.posts);
-  const scripts = grounded(result.scripts);
+  const hasBoth = posts.length > 0 && scripts.length > 0;
   return {
     summary: result.session_summary,
     themes: result.themes.slice(0, LIMITS.themes),
-    posts: posts.slice(0, LIMITS.posts).map((p) => ({
+    posts: posts.map((p) => ({
       platform: p.platform,
       title: p.title,
       body: p.body,
-      sourceExcerpt: p.grounded,
+      sourceExcerpt: checkQuote(p.source_excerpt),
     })),
-    scripts: scripts.slice(0, LIMITS.scripts).map((s) => ({
+    scripts: scripts.map((s) => ({
       title: s.title,
       body: formatScript(s),
-      sourceExcerpt: s.grounded,
+      sourceExcerpt: checkQuote(s.source_excerpt),
     })),
     newsletter: sensitive ? null : (result.newsletter ?? null),
     ideas: result.ideas.slice(0, LIMITS.ideas),
     memories: result.memories.slice(0, LIMITS.memories),
-    droppedUngrounded: dropped,
+    grounding,
+    noDraftsReason: sensitive || hasBoth ? null : (result.no_drafts_reason ?? null),
   };
 }
 
-function draftCount(session: ProcessedSession): number {
-  return session.posts.length + session.scripts.length;
+/** Having both a post and a script beats having more of one kind. */
+function draftScore(session: ProcessedSession): number {
+  const both = session.posts.length > 0 && session.scripts.length > 0;
+  return (both ? 100 : 0) + session.posts.length + session.scripts.length;
 }
+
+/** Sessions at least this long should yield a post and a script. */
+export const MIN_DRAFT_SESSION_SECONDS = 120;
+
+const MISSING_DRAFTS_NOTE =
+  "\n\nYour previous reply had no post or no script. This session is long enough that it should have both. " +
+  "Return the full JSON object again with at least one post and one script built on something specific the user said. " +
+  'If there is truly nothing usable, keep them empty and explain why in "no_drafts_reason".';
 
 export async function processTranscript(
   llm: LlmProvider,
@@ -346,29 +311,30 @@ export async function processTranscript(
   const request = { model: args.model, system: FINAL_SYSTEM_PROMPT + sensitiveNote, user: finalInput };
   const result = await completeValidated(llm, request, sessionResultSchema);
   const first = finalizeResult(result, transcript, args.sensitive);
-  if (args.sensitive || draftCount(first) > 0 || first.droppedUngrounded === 0) return first;
+  const longEnough =
+    (args.durationSeconds ?? 0) >= MIN_DRAFT_SESSION_SECONDS || isLongSession(transcript, args.durationSeconds);
+  const missing = first.posts.length === 0 || first.scripts.length === 0;
+  if (args.sensitive || !longEnough || !missing) return first;
 
-  // Every post and script failed the grounding check. Ask once more, showing
-  // the model which excerpts weren't found, and keep whichever pass grounded more.
-  const rejected = [...result.posts, ...result.scripts]
-    .map((d) => `- "${d.source_excerpt.slice(0, 200)}"`)
-    .join("\n");
+  // Ask once more. Keep whichever pass has more drafts; a failed retry keeps the first.
+  let best = first;
   try {
     const retry = await completeValidated(
       llm,
-      {
-        ...request,
-        user:
-          `${finalInput}\n\nYour previous drafts were all discarded because these source_excerpt values ` +
-          `were not found word for word in the user's lines:\n${rejected}\n\n` +
-          "Return the full JSON object again. Copy every source_excerpt exactly from a single user line (at least 8 words).",
-      },
+      { ...request, user: request.user + MISSING_DRAFTS_NOTE },
       sessionResultSchema,
     );
     const second = finalizeResult(retry, transcript, args.sensitive);
-    return draftCount(second) > draftCount(first) ? second : first;
+    if (draftScore(second) > draftScore(first)) best = second;
   } catch {
-    // The first pass is still a valid result; a failed retry shouldn't lose it.
-    return first;
+    // keep the first pass
   }
+  if (best.posts.length === 0 || best.scripts.length === 0) {
+    return {
+      ...best,
+      noDraftsReason:
+        best.noDraftsReason ?? first.noDraftsReason ?? "The model didn't find anything usable for a post or script.",
+    };
+  }
+  return best;
 }

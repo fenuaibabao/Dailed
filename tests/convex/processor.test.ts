@@ -82,57 +82,70 @@ describe("processor", () => {
 
     const outputs = await client.query(api.outputs.forCall, { callId });
     const kinds = outputs.map((o) => o.kind).sort();
-    expect(kinds).toEqual(["idea", "post", "script", "session_summary", "theme", "theme"]);
-    // The post with an invented excerpt ("$2M") was dropped.
-    expect(outputs.filter((o) => o.kind === "post").map((o) => o.title)).toEqual(["The kiln question"]);
+    expect(kinds).toEqual(["idea", "post", "post", "script", "session_summary", "theme", "theme"]);
+    // The post quoting something never said keeps its draft but loses the quote.
+    const posts = outputs.filter((o) => o.kind === "post");
+    expect(posts.find((o) => o.title === "The kiln question")?.sourceExcerpt).toBe(
+      "My dad just asked whether I had a plan for the kiln",
+    );
+    expect(posts.find((o) => o.title === undefined)?.sourceExcerpt).toBeUndefined();
     expect(outputs.find((o) => o.kind === "script")?.body).toContain("Hook: The scariest part");
 
     const memories = await t.run((ctx) => ctx.db.query("memories").collect());
     expect(memories.map((m) => m.content).sort()).toEqual(["Building a pottery studio", "Left their job in March"]);
     expect(memories.every((m) => m.userId === userId && m.callId === callId && !m.sensitive)).toBe(true);
-    expect((await t.run((ctx) => ctx.db.get(callId)))?.status).toBe("completed");
+    const row = await t.run((ctx) => ctx.db.get(callId));
+    expect(row?.status).toBe("completed");
+    expect(row?.grounding).toEqual({ drafts: 3, quotesKept: 2, quotesFixed: 0, quotesDropped: 1 });
+    expect(row?.noDraftsReason).toBeUndefined();
   });
 
-  test("when every draft fails grounding, asks once more and keeps the grounded retry", async () => {
-    const invented = {
-      ...GOOD,
-      posts: [{ ...GOOD.posts[0], source_excerpt: "My father wanted to know about the kiln plan" }],
-      scripts: [{ ...GOOD.scripts[0], source_excerpt: "Telling my mom and dad was the hardest bit" }],
-    };
+  test("a session of a few minutes with no script asks once more and keeps the fuller reply", async () => {
     fetchMock
-      .mockResolvedValueOnce(openAIReply(JSON.stringify(invented)))
+      .mockResolvedValueOnce(openAIReply(JSON.stringify({ ...GOOD, scripts: [] })))
       .mockResolvedValueOnce(openAIReply(JSON.stringify(GOOD)));
     const t = newTest();
-    const { userId, client } = await signedInAs(t);
-    const callId = await processingCall(t, userId);
+    const { userId } = await signedInAs(t);
+    const callId = await processingCall(t, userId, { durationSeconds: 226 });
     await t.action(internal.processor.run, { callId });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const retryBody = JSON.parse(String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body));
-    expect(retryBody.messages[1].content).toContain("My father wanted to know about the kiln plan");
-    const outputs = await client.query(api.outputs.forCall, { callId });
-    expect(outputs.filter((o) => o.kind === "post")).toHaveLength(1);
-    expect(outputs.filter((o) => o.kind === "script")).toHaveLength(1);
-    const row = await t.run((ctx) => ctx.db.get(callId));
-    expect(row?.status).toBe("completed");
-    expect(row?.draftsDropped).toBe(1); // the invented "$2M" post in the retry
+    expect(retryBody.messages[1].content).toContain("at least one post and one script");
+    const kinds = (await t.run((ctx) => ctx.db.query("outputs").collect())).map((o) => o.kind);
+    expect(kinds.filter((k) => k === "script")).toHaveLength(1);
+    expect((await t.run((ctx) => ctx.db.get(callId)))?.noDraftsReason).toBeUndefined();
   });
 
-  test("keeps the first pass when the grounding retry fails", async () => {
-    const invented = { ...GOOD, posts: [{ ...GOOD.posts[1] }], scripts: [] };
-    fetchMock
-      .mockResolvedValueOnce(openAIReply(JSON.stringify(invented)))
-      .mockResolvedValue(new Response("upstream down", { status: 503 }));
+  test("records why when a long enough session truly has nothing usable", async () => {
+    const empty = { ...GOOD, posts: [], scripts: [], no_drafts_reason: "You only said hello and goodbye." };
+    fetchMock.mockResolvedValue(openAIReply(JSON.stringify(empty)));
     const t = newTest();
     const { userId } = await signedInAs(t);
-    const callId = await processingCall(t, userId);
+    const callId = await processingCall(t, userId, { durationSeconds: 300 });
     await t.action(internal.processor.run, { callId });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     const row = await t.run((ctx) => ctx.db.get(callId));
     expect(row?.status).toBe("completed");
-    expect(row?.draftsDropped).toBe(1);
-    const kinds = (await t.run((ctx) => ctx.db.query("outputs").collect())).map((o) => o.kind);
-    expect(kinds).toContain("session_summary");
-    expect(kinds).not.toContain("post");
+    expect(row?.noDraftsReason).toBe("You only said hello and goodbye.");
+  });
+
+  test("a short session isn't pushed for drafts, and a failed retry keeps the first pass", async () => {
+    const t = newTest();
+    const { userId } = await signedInAs(t);
+    fetchMock.mockResolvedValueOnce(openAIReply(JSON.stringify({ ...GOOD, posts: [], scripts: [] })));
+    const shortCall = await processingCall(t, userId, { durationSeconds: 45 });
+    await t.action(internal.processor.run, { callId: shortCall });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fetchMock
+      .mockResolvedValueOnce(openAIReply(JSON.stringify({ ...GOOD, scripts: [] })))
+      .mockResolvedValue(new Response("upstream down", { status: 503 }));
+    const longCall = await processingCall(t, userId, { durationSeconds: 600 });
+    await t.action(internal.processor.run, { callId: longCall });
+    const row = await t.run((ctx) => ctx.db.get(longCall));
+    expect(row?.status).toBe("completed");
+    expect(row?.noDraftsReason).toMatch(/didn't find anything usable/);
   });
 
   test("retries once on invalid JSON, then succeeds", async () => {
@@ -188,7 +201,7 @@ describe("processor", () => {
         JSON.stringify({
           ...GOOD,
           posts: [{ ...GOOD.posts[0], source_excerpt: "This is line 1 about the studio, the kiln" }],
-          scripts: [],
+          scripts: [{ ...GOOD.scripts[0], source_excerpt: "This is line 2 about the studio, the kiln" }],
         }),
       );
     });
