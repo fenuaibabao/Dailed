@@ -33,6 +33,7 @@ function publicCall(call: Doc<"calls">, productName: string | null = null) {
     endedAt: call.endedAt ?? null,
     durationSeconds: call.durationSeconds ?? null,
     endReason: call.endReason ?? null,
+    contentDeleted: call.purgedAt !== undefined,
   };
 }
 

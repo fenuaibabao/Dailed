@@ -105,6 +105,28 @@ company or a clinic, and is managed at `/app/workspaces`.
   it is a reviewed code change. Health-data sessions are also marked
   sensitive.
 
+## Your data: audit log, retention, redaction, export
+
+- **Audit log** (`auditLog`): an append-only record of workspace changes
+  (create, join, roles, removals, health-data mode, invite codes, settings),
+  data settings, exports, session deletions and automatic cleanups. It never
+  holds session content. Workspace admins see their workspace's log on
+  `/app/workspaces`; everyone sees entries about themselves on `/app/privacy`.
+- **Retention:** keep everything (the default), or 30, 90 or 365 days, set per
+  person (`users.retentionDays`) and per workspace by its owner
+  (`orgs.retentionDays`); the shorter limit wins. A daily cron
+  (`convex/crons.ts` → `privacy.purgeExpired`) deletes expired sessions'
+  transcripts, recording links, outputs, memories and Weave links, in batches
+  of 100. The call row stays with its date, length and cost (`calls.purgedAt`).
+  People can also delete one session's content from the session page.
+- **Redaction** (`convex/lib/redaction.ts`): when the person, their workspace
+  or health-data mode asks for it, emails and any run of 9+ digits (phone,
+  card, account and ID numbers) are replaced with `[email]` and `[number]`
+  before the transcript is stored or sent to a model, and the recording link
+  isn't kept. Names and addresses aren't caught.
+- **Export:** `/app/privacy` downloads one JSON file with the person's profile,
+  consents, sessions, transcripts, outputs, memories, Weaves and workspaces.
+
 ## Vapi assistant setup
 
 1. Create an assistant in the Vapi dashboard and copy its ID into

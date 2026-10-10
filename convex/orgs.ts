@@ -1,7 +1,9 @@
 import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
+import { audit } from "./lib/audit";
 import { requireUserId } from "./lib/auth";
+import { checkRetention } from "./lib/retention";
 import { LAST_OWNER, FORBIDDEN, atLeast, canRemove, getMembership, ownerCount, requireRole } from "./lib/roles";
 import { orgRole } from "./schema";
 
@@ -84,6 +86,9 @@ export const get = query({
       _id: org._id,
       name: org.name,
       phiMode: org.phiMode,
+      retentionDays: org.retentionDays ?? null,
+      // Health-data mode always redacts.
+      redactTranscripts: org.redactTranscripts === true || org.phiMode,
       myRole: me.role,
       inviteCode: atLeast(me.role, "admin") ? org.inviteCode : null,
       members,
@@ -104,6 +109,7 @@ export const create = mutation({
     });
     await ctx.db.insert("memberships", { orgId, userId, role: "owner", joinedAt: Date.now() });
     await ctx.db.patch(userId, { activeOrgId: orgId });
+    await audit(ctx, { action: "org.create", actorId: userId, userId, orgId });
     return orgId;
   },
 });
@@ -114,6 +120,7 @@ export const rename = mutation({
     const userId = await requireUserId(ctx);
     await requireRole(ctx, orgId, userId, "admin");
     await ctx.db.patch(orgId, { name: cleanName(name) });
+    await audit(ctx, { action: "org.rename", actorId: userId, orgId });
   },
 });
 
@@ -131,6 +138,7 @@ export const join = mutation({
     if (org === null) throw new ConvexError(INVITE_INVALID);
     if ((await getMembership(ctx, org._id, userId)) === null) {
       await ctx.db.insert("memberships", { orgId: org._id, userId, role: "member", joinedAt: Date.now() });
+      await audit(ctx, { action: "org.join", actorId: userId, userId, orgId: org._id });
     }
     return org._id;
   },
@@ -143,6 +151,7 @@ export const resetInviteCode = mutation({
     const userId = await requireUserId(ctx);
     await requireRole(ctx, orgId, userId, "admin");
     await ctx.db.patch(orgId, { inviteCode: newInviteCode() });
+    await audit(ctx, { action: "org.invite_reset", actorId: userId, orgId });
   },
 });
 
@@ -158,6 +167,13 @@ export const setRole = mutation({
       throw new ConvexError(LAST_OWNER);
     }
     await ctx.db.patch(target._id, { role });
+    await audit(ctx, {
+      action: "org.role_change",
+      actorId: userId,
+      userId: targetId,
+      orgId,
+      details: { from: target.role, to: role },
+    });
   },
 });
 
@@ -173,6 +189,7 @@ export const removeMember = mutation({
     if (!canRemove(me.role, target.role)) throw new ConvexError(FORBIDDEN);
     await ctx.db.delete(target._id);
     await clearActive(ctx, targetId, orgId);
+    await audit(ctx, { action: "org.member_remove", actorId: userId, userId: targetId, orgId });
   },
 });
 
@@ -186,6 +203,7 @@ export const leave = mutation({
     }
     await ctx.db.delete(me._id);
     await clearActive(ctx, userId, orgId);
+    await audit(ctx, { action: "org.leave", actorId: userId, userId, orgId });
   },
 });
 
@@ -196,6 +214,64 @@ export const setPhiMode = mutation({
     const userId = await requireUserId(ctx);
     await requireRole(ctx, orgId, userId, "owner");
     await ctx.db.patch(orgId, { phiMode: on });
+    await audit(ctx, { action: "org.phi_mode", actorId: userId, orgId, details: { on } });
+  },
+});
+
+/** Owners set how long the workspace's session content is kept; null keeps it. */
+export const setRetention = mutation({
+  args: { orgId: v.id("orgs"), days: v.union(v.null(), v.number()) },
+  handler: async (ctx, { orgId, days }) => {
+    const userId = await requireUserId(ctx);
+    await requireRole(ctx, orgId, userId, "owner");
+    await ctx.db.patch(orgId, { retentionDays: checkRetention(days) });
+    await audit(ctx, { action: "org.retention", actorId: userId, orgId, details: { days } });
+  },
+});
+
+/** Owners switch transcript redaction for the workspace's sessions. */
+export const setRedaction = mutation({
+  args: { orgId: v.id("orgs"), on: v.boolean() },
+  handler: async (ctx, { orgId, on }) => {
+    const userId = await requireUserId(ctx);
+    await requireRole(ctx, orgId, userId, "owner");
+    await ctx.db.patch(orgId, { redactTranscripts: on });
+    await audit(ctx, { action: "org.redaction", actorId: userId, orgId, details: { on } });
+  },
+});
+
+/** The workspace's audit log, newest first. Admins and owners only. */
+export const activity = query({
+  args: { orgId: v.id("orgs") },
+  handler: async (ctx, { orgId }) => {
+    const userId = await requireUserId(ctx);
+    await requireRole(ctx, orgId, userId, "admin");
+    const entries = await ctx.db
+      .query("auditLog")
+      .withIndex("by_org_at", (q) => q.eq("orgId", orgId))
+      .order("desc")
+      .take(50);
+    const names = new Map<string, string | null>();
+    async function nameOf(id: Id<"users"> | undefined) {
+      if (id === undefined) return null;
+      if (!names.has(id)) {
+        const user = await ctx.db.get(id);
+        names.set(id, user?.name ?? user?.email ?? null);
+      }
+      return names.get(id) ?? null;
+    }
+    const result = [];
+    for (const e of entries) {
+      result.push({
+        _id: e._id,
+        action: e.action,
+        at: e.at,
+        actor: e.actorId === undefined ? null : ((await nameOf(e.actorId)) ?? "Someone"),
+        subject: await nameOf(e.userId),
+        details: e.details ?? null,
+      });
+    }
+    return result;
   },
 });
 

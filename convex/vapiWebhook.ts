@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
+import { redact } from "./lib/redaction";
 import { timingSafeEqualStrings } from "./lib/secrets";
 
 export const INVALID_WEBHOOK_SECRET = "INVALID_WEBHOOK_SECRET";
@@ -61,12 +62,19 @@ export const recordEndOfCallReport = mutation({
       return { outcome: "duplicate" as const };
     }
 
-    const transcript = report.transcript?.trim() ?? "";
+    // Redaction: the person's setting, the workspace's, or health-data mode.
+    // The recording isn't redacted, so it isn't kept either.
+    const user = await ctx.db.get(call.userId);
+    const org = call.orgId !== undefined ? await ctx.db.get(call.orgId) : null;
+    const shouldRedact =
+      user?.redactTranscripts === true || org?.redactTranscripts === true || org?.phiMode === true;
+    const raw = report.transcript?.trim() ?? "";
+    const transcript = shouldRedact ? redact(raw).text : raw;
     const hasTranscript = transcript.length > 0;
     await ctx.db.patch(call._id, {
       vapiCallId: call.vapiCallId ?? report.vapiCallId,
       transcript: hasTranscript ? transcript : undefined,
-      recordingUrl: report.recordingUrl,
+      recordingUrl: shouldRedact ? undefined : report.recordingUrl,
       durationSeconds:
         report.durationSeconds !== undefined ? Math.round(report.durationSeconds) : undefined,
       costUsd: report.costUsd,

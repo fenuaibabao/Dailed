@@ -5,6 +5,7 @@ import { ConvexError } from "convex/values";
 import { useState, type FormEvent } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { RETENTION_OPTIONS, describeActivity, formatWhen } from "@/lib/activity";
 
 type Role = "owner" | "admin" | "member";
 
@@ -104,6 +105,8 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
   const removeMember = useMutation(api.orgs.removeMember);
   const resetInviteCode = useMutation(api.orgs.resetInviteCode);
   const setPhiMode = useMutation(api.orgs.setPhiMode);
+  const setRetention = useMutation(api.orgs.setRetention);
+  const setRedaction = useMutation(api.orgs.setRedaction);
   const leave = useMutation(api.orgs.leave);
   const action = useAction();
 
@@ -151,6 +154,40 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
           {!isOwner && <span className="text-muted">(owners can change this)</span>}
         </label>
       </div>
+
+      <div className="space-y-2">
+        <label htmlFor={`retention-${orgId}`} className="block text-sm font-medium">
+          Keep sessions in this workspace for
+        </label>
+        <select
+          id={`retention-${orgId}`}
+          value={org.retentionDays?.toString() ?? ""}
+          disabled={!isOwner || action.pending}
+          onChange={(e) =>
+            action.run(() => setRetention({ orgId, days: e.target.value === "" ? null : Number(e.target.value) }))
+          }
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        >
+          {RETENTION_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            checked={org.redactTranscripts}
+            disabled={!isOwner || org.phiMode || action.pending}
+            onChange={(e) => action.run(() => setRedaction({ orgId, on: e.target.checked }))}
+          />
+          Hide emails and long numbers in transcripts
+          {org.phiMode && <span className="text-muted">(always on in health-data mode)</span>}
+        </label>
+      </div>
+
+      {isAdmin && <OrgActivity orgId={orgId} />}
 
       <div>
         <p className="text-sm font-medium">People</p>
@@ -208,6 +245,31 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
       </div>
       <ErrorLine error={action.error} />
     </div>
+  );
+}
+
+function OrgActivity({ orgId }: { orgId: Id<"orgs"> }) {
+  const activity = useQuery(api.orgs.activity, { orgId });
+  return (
+    <details>
+      <summary className="cursor-pointer text-sm font-medium">Activity log</summary>
+      {activity === undefined ? (
+        <p className="mt-2 text-sm text-muted">Loading…</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-border" data-testid="org-activity">
+          {activity.map((a) => (
+            <li key={a._id} className="flex flex-wrap justify-between gap-2 py-1.5 text-sm">
+              <span>
+                {describeActivity(a.action, a.details)}
+                {a.subject && a.subject !== a.actor && <span className="text-muted"> · {a.subject}</span>}
+                <span className="text-muted"> · by {a.actor ?? "automatic cleanup"}</span>
+              </span>
+              <span className="text-muted">{formatWhen(a.at)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
   );
 }
 

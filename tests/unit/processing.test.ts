@@ -6,6 +6,8 @@ import {
 } from "../../convex/lib/processing";
 import { buildSessionPrompt } from "../../convex/lib/sessionPrompt";
 import { MAX_WEAVES_PER_SESSION, buildWeaveInput, resolveAssignments } from "../../convex/lib/weaving";
+import { redact } from "../../convex/lib/redaction";
+import { checkRetention, effectiveRetention } from "../../convex/lib/retention";
 import { BAA_COVERED_VENDORS, missingBaas } from "../../convex/lib/phi";
 import { atLeast, canRemove } from "../../convex/lib/roles";
 
@@ -94,5 +96,33 @@ describe("roles and health-data mode", () => {
     expect(missingBaas("openai")).toEqual(["vapi", "convex", "vercel", "openai"]);
     expect(missingBaas("openai", ["vapi", "convex", "vercel"])).toEqual(["openai"]);
     expect(missingBaas("openai", ["vapi", "convex", "vercel", "openai"])).toEqual([]);
+  });
+});
+
+describe("redaction", () => {
+  test("hides emails and runs of 9+ digits, keeps years, prices and short numbers", () => {
+    const { text, count } = redact(
+      "Mail jo.smith+work@mail.example.co.uk, call 07700 900123 or (555) 123-4567. SSN 123-45-6789, card 4111 1111 1111 1111. " +
+        "In 2019 and 2020 we made $40,000 with 12 people, 3.5% growth, room 1204.",
+    );
+    expect(text).toBe(
+      "Mail [email], call [number] or [number]. SSN [number], card [number]. " +
+        "In 2019 and 2020 we made $40,000 with 12 people, 3.5% growth, room 1204.",
+    );
+    expect(count).toBe(5);
+  });
+
+  test("never joins lines", () => {
+    expect(redact("User: 12345\nAI: 6789").text).toBe("User: 12345\nAI: 6789");
+  });
+});
+
+describe("retention", () => {
+  test("the shorter limit wins; none means keep", () => {
+    expect(effectiveRetention(undefined, undefined)).toBeUndefined();
+    expect(effectiveRetention(90, undefined)).toBe(90);
+    expect(effectiveRetention(90, 30)).toBe(30);
+    expect(checkRetention(null)).toBeUndefined();
+    expect(() => checkRetention(45)).toThrow("INVALID_RETENTION");
   });
 });

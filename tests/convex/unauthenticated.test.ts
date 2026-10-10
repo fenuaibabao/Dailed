@@ -74,6 +74,15 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
   },
   "orgs:setPhiMode": async (f) => ({ orgId: await ownedOrg(f), on: true }),
   "orgs:setActive": async (f) => ({ orgId: await ownedOrg(f) }),
+  "orgs:setRetention": async (f) => ({ orgId: await ownedOrg(f), days: 90 }),
+  "orgs:setRedaction": async (f) => ({ orgId: await ownedOrg(f), on: true }),
+  "orgs:activity": async (f) => ({ orgId: await ownedOrg(f) }),
+  "privacy:mySettings": async () => ({}),
+  "privacy:setRetention": async () => ({ days: 30 }),
+  "privacy:setRedaction": async () => ({ on: true }),
+  "privacy:deleteSession": async ({ t, userId }) => ({ callId: await insertCall(t, userId, { status: "completed" }) }),
+  "privacy:exportMine": async () => ({}),
+  "privacy:myActivity": async () => ({}),
 };
 
 /** A workspace owned by the fixture's user. */
