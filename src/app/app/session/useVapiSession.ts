@@ -14,6 +14,7 @@ const START_ERRORS: Record<ActionErrorCode | "VOICE_UNAVAILABLE" | "MIC_OR_CONNE
   UNAUTHENTICATED: "Your sign-in expired. Please sign in again.",
   RECORDING_CONSENT_REQUIRED: "Please agree to recording before starting a session.",
   APP_NOT_SEEDED: "Sessions aren't set up on this server yet (the seed hasn't run).",
+  PRODUCT_UNAVAILABLE: "This product isn't available yet.",
   VOICE_UNAVAILABLE: "Voice sessions aren't available right now. Please try again later.",
   MIC_OR_CONNECTION:
     "We couldn't start the call. Check that your browser can use the microphone, then try again.",
@@ -38,13 +39,13 @@ export function useVapiSession() {
   }, []);
 
   const begin = useCallback(
-    async (mode: "quick" | "deep", focus: string) => {
+    async (product: string, focus: string) => {
       if (starting || vapiRef.current !== null) return;
       setStarting(true);
       setError(null);
       let callId: Id<"calls"> | null = null;
       try {
-        const started = await startSession({ mode, focus: focus.trim() || undefined });
+        const started = await startSession({ product, focus: focus.trim() || undefined });
         if (!started.ok) {
           setError(START_ERRORS[started.error]);
           return;

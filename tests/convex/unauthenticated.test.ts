@@ -35,7 +35,7 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
   "calls:start": async ({ t, userId }) => {
     await seedApp(t);
     await grantConsent(t, userId);
-    return { mode: "quick" };
+    return {};
   },
   "calls:reportClientStatus": async ({ t, userId }) => ({
     callId: await insertCall(t, userId),

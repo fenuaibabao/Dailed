@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { REMI_SYSTEM_PROMPT } from "../../convex/lib/remi";
+import { REMI_SYSTEM_PROMPT, remiSystemPrompt } from "../../convex/lib/remi";
+import { PRODUCTS } from "../../src/config/products";
 import {
   TEST_ASSISTANT_ID,
   grantConsent,
@@ -24,7 +25,7 @@ describe("start", () => {
     const t = newTest();
     await seedApp(t);
     const { client } = await signedInAs(t);
-    await expect(client.mutation(api.calls.start, { mode: "quick" })).rejects.toThrow(
+    await expect(client.mutation(api.calls.start, {})).rejects.toThrow(
       "RECORDING_CONSENT_REQUIRED",
     );
   });
@@ -32,30 +33,41 @@ describe("start", () => {
   test("creates a queued call owned by the caller and returns the Vapi config", async () => {
     const t = newTest();
     const { userId, client } = await readyUser(t);
-    const result = await client.mutation(api.calls.start, { mode: "quick", focus: "  my launch  " });
+    const result = await client.mutation(api.calls.start, { focus: "  my launch  " });
 
     expect(result.assistantId).toBe(TEST_ASSISTANT_ID);
     expect(result.assistantOverrides.metadata).toEqual({ call_id: result.callId });
-    expect(result.assistantOverrides.maxDurationSeconds).toBe(600);
+    expect(result.assistantOverrides.maxDurationSeconds).toBe(5400);
     expect(result.assistantOverrides.model).toMatchObject({ provider: "openai", model: "gpt-4.1-mini" });
 
     const prompt = result.assistantOverrides.model.messages[0].content;
     expect(prompt.startsWith(REMI_SYSTEM_PROMPT)).toBe(true);
-    expect(prompt).toContain("This is a quick session of about 10 minutes.");
+    expect(prompt).toContain("ask how much time they have today");
     expect(prompt).toContain("Today's focus: my launch");
 
     const row = await t.run((ctx) => ctx.db.get(result.callId));
-    expect(row).toMatchObject({ userId, status: "queued", mode: "quick", channel: "web", focus: "my launch" });
+    expect(row).toMatchObject({ userId, status: "queued", mode: "open", channel: "web", focus: "my launch" });
   });
 
-  test("deep sessions get 5400 seconds and the deep suffix", async () => {
+  test("the product sets the app, Remi's focus and first message", async () => {
     const t = newTest();
     const { client } = await readyUser(t);
-    const result = await client.mutation(api.calls.start, { mode: "deep" });
-    expect(result.assistantOverrides.maxDurationSeconds).toBe(5400);
-    expect(result.assistantOverrides.model.messages[0].content).toContain(
-      "This is a deep session; the user has set aside up to 90 minutes.",
+    const result = await client.mutation(api.calls.start, { product: "clarity" });
+    expect(result.assistantOverrides.model.messages[0].content.startsWith(remiSystemPrompt(PRODUCTS.clarity))).toBe(
+      true,
     );
+    expect(result.assistantOverrides.firstMessage).toContain("to make your private summary");
+    const call = await t.run((ctx) => ctx.db.get(result.callId));
+    const app = await t.run((ctx) => ctx.db.get(call!.appId));
+    expect(app?.slug).toBe("clarity");
+  });
+
+  test("refuses products that aren't enabled or don't exist", async () => {
+    const t = newTest();
+    const { client } = await readyUser(t);
+    await expect(client.mutation(api.calls.start, { product: "founder" })).rejects.toThrow("PRODUCT_UNAVAILABLE");
+    await expect(client.mutation(api.calls.start, { product: "nope" })).rejects.toThrow("PRODUCT_UNAVAILABLE");
+    expect(await t.run((ctx) => ctx.db.query("calls").collect())).toEqual([]);
   });
 
   test("ignores any user id smuggled into the arguments", async () => {
@@ -64,7 +76,7 @@ describe("start", () => {
     const other = await signedInAs(t, "Grace");
     await expect(
       // @ts-expect-error userId is not an accepted argument
-      client.mutation(api.calls.start, { mode: "quick", userId: other.userId }),
+      client.mutation(api.calls.start, { userId: other.userId }),
     ).rejects.toThrow();
   });
 });
@@ -95,7 +107,7 @@ describe("memory in the prompt", () => {
     await addMemory(t, userId, appId, "secret-0", 5, true);
     await addMemory(t, grace.userId, appId, "grace-0", 5);
 
-    const result = await client.mutation(api.calls.start, { mode: "quick" });
+    const result = await client.mutation(api.calls.start, {});
     const prompt = result.assistantOverrides.model.messages[0].content;
     const included = [...prompt.matchAll(/- Fact: (\S+)/g)].map((m) => m[1]);
 
@@ -122,7 +134,7 @@ describe("memory in the prompt", () => {
         }),
       );
     }
-    const result = await client.mutation(api.calls.start, { mode: "quick" });
+    const result = await client.mutation(api.calls.start, {});
     const prompt = result.assistantOverrides.model.messages[0].content;
     expect(prompt).toContain("summary-3");
     expect(prompt).toContain("summary-2");
@@ -134,7 +146,7 @@ describe("memory in the prompt", () => {
   test("a first session says so instead of an empty memory block", async () => {
     const t = newTest();
     const { client } = await readyUser(t);
-    const result = await client.mutation(api.calls.start, { mode: "quick" });
+    const result = await client.mutation(api.calls.start, {});
     expect(result.assistantOverrides.model.messages[0].content).toContain(
       "This is your first session with this person.",
     );

@@ -11,7 +11,9 @@ export const outputKind = v.union(
   v.literal("idea"),
 );
 
-export const callMode = v.union(v.literal("quick"), v.literal("deep"));
+// "open" is the single Start talking session: Remi asks how much time they
+// have. "quick" and "deep" remain for sessions started before that.
+export const callMode = v.union(v.literal("quick"), v.literal("deep"), v.literal("open"));
 
 export const callStatus = v.union(
   v.literal("queued"),

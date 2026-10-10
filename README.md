@@ -64,11 +64,24 @@ Private keys must never reach client code, logs or API responses.
 
 ## Seed
 
-`npm run seed` runs the internal mutation `seed:run`. It upserts the `create`
-app by slug and the "Remi" persona by (app, name), with Remi's system prompt,
-first message, OpenAI `gpt-4.1-mini` and `maxCallSeconds` 5400. Running it again
+`npm run seed` runs the internal mutation `seed:run`. For every enabled product
+in `src/config/products.ts` it upserts an app by slug and a "Remi" persona by
+(app, name), with Remi's prompt plus that product's interview focus, its first
+message, OpenAI `gpt-4.1-mini` and the product's max session length. Running it again
 updates the same rows; it never creates duplicates. It refuses to run if
-`REMI_ASSISTANT_ID` isn't set. For production: `npx convex run seed:run --prod`.
+`REMI_ASSISTANT_ID` isn't set. Production deploys run it automatically.
+
+## Products
+
+The suite lives in `src/config/products.ts`: each product is the same loop with
+its own name, landing headline, interview focus, max session length and output
+templates. Create and Clarity are enabled; Founder, Legacy, Voices and Intake
+have "coming soon" landing pages. Every product has a landing page at
+`/<slug>` (the home page is Create). Its Start talking button carries
+`?product=<slug>` through sign-up and sign-in to `/app/session`, which runs
+that product. Products without post or script templates (Clarity) never get
+posts, scripts or a newsletter. To add one: add it to the config, set
+`enabled: true`, and deploy.
 
 ## Vapi assistant setup
 
@@ -84,15 +97,16 @@ updates the same rows; it never creates duplicates. It refuses to run if
 5. Enable recording on the assistant if you want the recording URL saved.
 
 Per call, the app sends the system prompt (with the mode line, memory block and
-today's focus), first message, model and `maxDurationSeconds` (600 quick, 5400
-deep) as `assistantOverrides`, plus `metadata.call_id` so the webhook can find
+today's focus), first message, model and `maxDurationSeconds` (the product's
+maximum, 90 minutes for now) as `assistantOverrides`, plus `metadata.call_id` so the webhook can find
 the call. The dashboard's own prompt is overridden.
 
 ## How a session flows
 
 1. The user ticks the recording consent once (stored in `consents` with IP and
    user agent).
-2. **Quick** or **Deep** calls the `startSession` server action, which creates
+2. **Start talking** calls the `startSession` server action with the page's
+   product, which creates
    a `queued` call and returns the Vapi config.
 3. Only then does the browser fetch the public key, import `@vapi-ai/web` and
    start the call (which is when the microphone is requested).

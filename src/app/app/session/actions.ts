@@ -8,7 +8,12 @@ import { RECORDING_CONSENT_TEXT } from "@/lib/consent";
 
 // Errors thrown from server actions are redacted in production, so these
 // return a result instead of throwing.
-const KNOWN_ERRORS = ["UNAUTHENTICATED", "RECORDING_CONSENT_REQUIRED", "APP_NOT_SEEDED"] as const;
+const KNOWN_ERRORS = [
+  "UNAUTHENTICATED",
+  "RECORDING_CONSENT_REQUIRED",
+  "APP_NOT_SEEDED",
+  "PRODUCT_UNAVAILABLE",
+] as const;
 export type ActionErrorCode = (typeof KNOWN_ERRORS)[number] | "UNKNOWN";
 
 function errorCode(error: unknown): ActionErrorCode {
@@ -50,13 +55,13 @@ export async function grantRecordingConsent(): Promise<
  * (assistant id + overrides with the assembled prompt). The browser then
  * starts the web call itself.
  */
-export async function startSession(input: { mode: "quick" | "deep"; focus?: string }) {
+export async function startSession(input: { product: string; focus?: string }) {
   const token = await getToken();
   if (token === null) return { ok: false as const, error: "UNAUTHENTICATED" as ActionErrorCode };
   try {
     const config = await fetchMutation(
       api.calls.start,
-      { mode: input.mode, focus: input.focus },
+      { product: input.product, focus: input.focus },
       { token },
     );
     return { ok: true as const, ...config };

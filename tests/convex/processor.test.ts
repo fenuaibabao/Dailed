@@ -148,6 +148,31 @@ describe("processor", () => {
     expect(row?.noDraftsReason).toMatch(/didn't find anything usable/);
   });
 
+  test("a product without posts or scripts (Clarity) saves none and doesn't ask for them", async () => {
+    fetchMock.mockResolvedValue(openAIReply(JSON.stringify(GOOD)));
+    const t = newTest();
+    const { userId } = await signedInAs(t);
+    const callId = await processingCall(t, userId, { durationSeconds: 600 });
+    await t.run(async (ctx) => {
+      const clarity = await ctx.db
+        .query("apps")
+        .withIndex("by_slug", (q) => q.eq("slug", "clarity"))
+        .unique();
+      await ctx.db.patch(callId, { appId: clarity!._id, personaId: clarity!.defaultPersonaId! });
+    });
+    await t.action(internal.processor.run, { callId });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
+    expect(body.messages[0].content).toContain("private reflection");
+    const kinds = (await t.run((ctx) => ctx.db.query("outputs").collect())).map((o) => o.kind);
+    expect(kinds).toContain("session_summary");
+    expect(kinds.some((k) => ["post", "script", "newsletter"].includes(k))).toBe(false);
+    const row = await t.run((ctx) => ctx.db.get(callId));
+    expect(row?.status).toBe("completed");
+    expect(row?.noDraftsReason).toBeUndefined();
+  });
+
   test("retries once on invalid JSON, then succeeds", async () => {
     fetchMock
       .mockResolvedValueOnce(openAIReply("Sure! Here are your drafts: {"))

@@ -26,7 +26,7 @@ test("sign up lands on /app/session and the session survives reloads and protect
   await expect(page).toHaveURL(/\/app\/session$/);
   await expect(page.getByRole("heading", { name: "Talk it through with Remi" })).toBeVisible();
   // Consent comes first; Start stays disabled until it's given.
-  await expect(page.getByRole("button", { name: "Quick session (10 min)" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Start talking" })).toBeDisabled();
 
   // The bug in the previous build: a full page load bounced back to sign-in.
   await page.reload();
@@ -100,7 +100,7 @@ test("the session page never loads Vapi or asks for the mic before Start, and fi
   await signUp(page, uniqueEmail());
   await expect(page).toHaveURL(/\/app\/session$/);
   await page.getByRole("checkbox").check();
-  await expect(page.getByRole("button", { name: "Quick session (10 min)" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start talking" })).toBeEnabled();
   await page.waitForLoadState("networkidle");
   expect(await watch.micRequests()).toBe(0);
   expect(watch.vapiRequests).toEqual([]);
