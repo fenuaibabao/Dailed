@@ -1,6 +1,7 @@
 "use client";
 
 import { useConvexAuth, useQuery } from "convex/react";
+import Link from "next/link";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
@@ -77,6 +78,8 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
   const { isAuthenticated } = useConvexAuth();
   const consent = useQuery(api.consents.myRecordingConsent, isAuthenticated ? {} : "skip");
   const calls = useQuery(api.calls.listMine, isAuthenticated ? {} : "skip");
+  const workspaces = useQuery(api.orgs.listMine, isAuthenticated ? {} : "skip");
+  const workspace = workspaces?.orgs.find((o) => o._id === workspaces.activeOrgId) ?? null;
   const session = useVapiSession();
   const [focus, setFocus] = useState("");
   const [selectedCallId, setSelectedCallId] = useState<Id<"calls"> | null>(null);
@@ -104,6 +107,16 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
             <p className="text-sm font-medium text-accent">{product.name}</p>
             <h1 className="mt-1 text-2xl font-semibold">Talk it through with Remi</h1>
           </div>
+
+          {workspaces !== undefined && (
+            <p className="text-sm text-muted" data-testid="session-workspace">
+              Workspace: {workspace?.name ?? "Personal"}
+              {workspace?.phiMode && " (health-data mode: sessions are off)"} ·{" "}
+              <Link href="/app/workspaces" className="underline">
+                Change
+              </Link>
+            </p>
+          )}
 
           {consent === null && <ConsentBox />}
 

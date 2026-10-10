@@ -15,6 +15,8 @@ const START_ERRORS: Record<ActionErrorCode | "VOICE_UNAVAILABLE" | "MIC_OR_CONNE
   RECORDING_CONSENT_REQUIRED: "Please agree to recording before starting a session.",
   APP_NOT_SEEDED: "Sessions aren't set up on this server yet (the seed hasn't run).",
   PRODUCT_UNAVAILABLE: "This product isn't available yet.",
+  PHI_NOT_READY:
+    "This workspace is in health-data mode. Sessions there stay off until our vendors sign health-data agreements (BAAs). Switch to another workspace to talk.",
   VOICE_UNAVAILABLE: "Voice sessions aren't available right now. Please try again later.",
   MIC_OR_CONNECTION:
     "We couldn't start the call. Check that your browser can use the microphone, then try again.",

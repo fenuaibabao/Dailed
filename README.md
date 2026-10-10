@@ -83,6 +83,28 @@ that product. Products without post or script templates (Clarity) never get
 posts, scripts or a newsletter. To add one: add it to the config, set
 `enabled: true`, and deploy.
 
+## Workspaces, roles and health-data mode
+
+Personal use needs no workspace. A workspace (`orgs`) is for a team, such as a
+company or a clinic, and is managed at `/app/workspaces`.
+
+- Roles (`memberships.role`): **owner** (roles, health-data mode), **admin**
+  (invite code, rename, remove members) and **member**. Rules live in
+  `convex/lib/roles.ts`. A workspace always keeps at least one owner.
+- People join with the workspace's invite code. No email is sent. Admins can
+  replace the code, which stops the old one working.
+- Each user picks where new sessions go (`users.activeOrgId`), and the call
+  records it as `calls.orgId`. Sessions stay private to the person who had
+  them; workspace members don't see each other's sessions.
+- **Health-data mode** (`orgs.phiMode`, the `phi_mode` flag) is for
+  workspaces that would handle protected health information. While it's on,
+  `calls.start` refuses sessions in that workspace (`PHI_NOT_READY`) unless
+  every vendor a session passes through (Vapi, Convex, Vercel and the
+  persona's model provider) is listed in `BAA_COVERED_VENDORS` in
+  `convex/lib/phi.ts`. That list is empty until BAAs are signed, and changing
+  it is a reviewed code change. Health-data sessions are also marked
+  sensitive.
+
 ## Vapi assistant setup
 
 1. Create an assistant in the Vapi dashboard and copy its ID into

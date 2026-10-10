@@ -12,7 +12,12 @@ export default function SignedInLayout({ children }: { children: ReactNode }) {
         <Link href="/app/session" className="font-semibold">
           {BRAND.name}
         </Link>
-        <SignOutButton />
+        <nav className="flex items-center gap-4">
+          <Link href="/app/workspaces" className="text-sm">
+            Workspaces
+          </Link>
+          <SignOutButton />
+        </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-8">{children}</main>
     </div>

@@ -13,6 +13,8 @@ import {
 } from "./lib/sessionPrompt";
 import { REMI_START_SPEAKING_PLAN } from "./lib/turnTaking";
 import { activeRecordingConsent } from "./consents";
+import { PHI_NOT_READY, missingBaas } from "./lib/phi";
+import { getMembership } from "./lib/roles";
 
 // If the end-of-call webhook hasn't arrived this long after the browser saw
 // the call end, the call is marked failed instead of spinning forever.
@@ -64,6 +66,15 @@ export const start = mutation({
 
     const user = await ctx.db.get(userId);
     const timezone = user?.timezone ?? "UTC";
+
+    // The session belongs to the user's chosen workspace, if they're still in it.
+    const org =
+      user?.activeOrgId !== undefined && (await getMembership(ctx, user.activeOrgId, userId)) !== null
+        ? await ctx.db.get(user.activeOrgId)
+        : null;
+    if (org?.phiMode && missingBaas(persona.llmProvider).length > 0) {
+      throw new ConvexError(PHI_NOT_READY);
+    }
     const systemPrompt = buildSessionPrompt({
       basePrompt: persona.systemPrompt,
       mode,
@@ -74,13 +85,15 @@ export const start = mutation({
 
     const callId = await ctx.db.insert("calls", {
       userId,
+      orgId: org?._id,
       appId: app._id,
       personaId: persona._id,
       mode,
       channel: "web",
       status: "queued",
       focus: trimmedFocus,
-      sensitive: persona.isSensitive,
+      // Health-data sessions get the strictest handling: no drafts, kept out of prompts.
+      sensitive: persona.isSensitive || org?.phiMode === true,
     });
 
     return {
