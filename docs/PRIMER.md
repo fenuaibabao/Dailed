@@ -84,6 +84,7 @@ I don't want to break any laws. Have legal review before launch.
 - Next: **section 2 (products as configuration)**, waiting on my OK to start.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
+- Open, waiting on my OK to merge: **#7, Remi turn-taking fix**. Remi waits longer before replying, set in code instead of the Vapi dashboard.
 
 ## 6. Roadmap (in order)
 
@@ -135,7 +136,7 @@ Keep the LLM behind a provider interface so we can switch to a BAA-covered model
   - The public key is served from `/api/vapi/public-config`.
 - **Remi**, Vapi assistant `f27f59c7-b119-4e6a-86d5-000b135e7336`:
   - maxDuration 5400 s; silence timeout 60 s.
-  - Start-speaking: wait 0.8 s, onPunctuation 1.0, onNoPunctuation 2.5, onNumber 1.0. These were tuned because Remi was interrupting.
+  - Turn-taking lives in code, `convex/lib/turnTaking.ts`, sent with every call as `startSpeakingPlan`. Remi waits about 2.5 s of quiet after a finished sentence, 4 s when you trail off on "and", "because", "um" or a comma, and 1.2 s after a bare "yeah" or "no", plus a 0.8 s start delay. These are custom endpointing rules, which Vapi applies ahead of smart endpointing and the transcriber's own turn detection; the dashboard's punctuation timings (onPunctuation 1.0, onNoPunctuation 2.5, onNumber 1.0) sit below those and could be skipped, which is the likely reason Remi still interrupted.
   - Published v6.
   - First message: "Hi, this is Remi, your AI interviewer from Warpwork. This call is recorded to make your drafts. Got a few minutes?" The app sends the first message, model and system prompt as overrides on every call, from the seeded persona (`convex/lib/remi.ts`, which reads `BRAND_NAME`), so the Vapi dashboard copy doesn't need editing.
 - **OpenAI** runs the processor behind a provider interface, so another provider can be swapped in per persona. xAI works; the Anthropic adapter is still a stub.
@@ -211,6 +212,7 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-0x: Working brand is Warpwork; Weaveworks, Heddle, Selvedge and Tapestry were rejected.
 - 2026-10-0x: Healthcare = build the foundations now, sign BAAs later.
 - 2026-10-10: Grounding uses close matching, not exact. A quote that can't be matched is removed and the draft stays (shown without a "You said" line).
+- 2026-10-10: Remi's turn-taking (when it starts talking) is set in code and sent on every call, not tuned in the Vapi dashboard. It errs on waiting too long rather than interrupting.
 - 2026-10-10: Previews build the site only, against prod Convex, with no prod key and no backend push. A Convex preview/dev deploy key can give them their own backend later.
 - 2026-10-10: Production deploys re-run the idempotent seed so config (brand, persona prompt) reaches prod without a manual step.
 - 2026-10-10: Claude opens one PR per section and waits for my OK to merge it and before starting the next section.
