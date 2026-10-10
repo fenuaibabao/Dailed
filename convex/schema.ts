@@ -150,6 +150,16 @@ export default defineSchema({
     endReason: v.optional(v.string()),
     reportReceivedAt: v.optional(v.number()), // set once by the Vapi webhook
     processingError: v.optional(v.string()),
+    // What the quote check did to this session's posts and scripts.
+    grounding: v.optional(
+      v.object({
+        drafts: v.number(),
+        quotesKept: v.number(),
+        quotesFixed: v.number(),
+        quotesDropped: v.number(),
+      }),
+    ),
+    noDraftsReason: v.optional(v.string()), // set when a long enough session got no post or no script
     sensitive: v.boolean(),
   })
     .index("by_user", ["userId"])

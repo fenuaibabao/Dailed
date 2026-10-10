@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
   chunkTranscript,
-  isGroundedExcerpt,
   isLongSession,
   userSpeech,
 } from "../../convex/lib/processing";
@@ -26,15 +25,6 @@ describe("transcript helpers", () => {
     const transcript = "AI: What are you building?\nUser: A studio.\nIt has a kiln.\nAI: Nice.\nUser: Thanks.";
     expect(userSpeech(transcript)).toBe(" A studio.\nIt has a kiln.\n Thanks.");
     expect(userSpeech("no labels here")).toBe("no labels here");
-  });
-
-  test("grounding accepts real quotes despite case and punctuation, and rejects inventions", () => {
-    const speech = userSpeech("AI: Tell me more.\nUser: Honestly, the scariest part was telling my parents!");
-    expect(isGroundedExcerpt("the scariest part was telling my parents", speech)).toBe(true);
-    expect(isGroundedExcerpt("The Scariest part — was telling my parents.", speech)).toBe(true);
-    expect(isGroundedExcerpt("the scariest part was telling my investors", speech)).toBe(false);
-    expect(isGroundedExcerpt("Tell me more about it", speech)).toBe(false); // the AI said it
-    expect(isGroundedExcerpt("my parents", speech)).toBe(false); // too short to count
   });
 });
 

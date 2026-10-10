@@ -30,16 +30,22 @@ const processedValidator = v.object({
       platform: v.optional(v.string()),
       title: v.optional(v.string()),
       body: v.string(),
-      sourceExcerpt: v.string(),
+      sourceExcerpt: v.optional(v.string()),
     }),
   ),
   scripts: v.array(
-    v.object({ title: v.optional(v.string()), body: v.string(), sourceExcerpt: v.string() }),
+    v.object({ title: v.optional(v.string()), body: v.string(), sourceExcerpt: v.optional(v.string()) }),
   ),
   newsletter: v.union(v.null(), v.object({ title: v.string(), body: v.string() })),
   ideas: v.array(v.string()),
   memories: v.array(v.object({ kind: memoryKind, content: v.string(), importance: v.number() })),
-  droppedUngrounded: v.number(),
+  grounding: v.object({
+    drafts: v.number(),
+    quotesKept: v.number(),
+    quotesFixed: v.number(),
+    quotesDropped: v.number(),
+  }),
+  noDraftsReason: v.union(v.null(), v.string()),
 });
 
 /** Writes a session's outputs and memories exactly once. */
@@ -103,7 +109,12 @@ export const saveResults = internalMutation({
         sensitive: call.sensitive,
       });
     }
-    await ctx.db.patch(callId, { status: "completed", processingError: undefined });
+    await ctx.db.patch(callId, {
+      status: "completed",
+      processingError: undefined,
+      grounding: result.grounding,
+      noDraftsReason: result.noDraftsReason ?? undefined,
+    });
   },
 });
 
@@ -124,6 +135,15 @@ export const run = internalAction({
     if (job === null) return;
     try {
       const result = await processTranscript(getLlmProvider(job.provider), job);
+      // Dev only: set GROUNDING_LOGS=1 on a dev deployment. Counts, never content.
+      if (process.env.GROUNDING_LOGS === "1") {
+        const g = result.grounding;
+        console.log(
+          `Grounding for call ${callId}: ${result.posts.length} posts, ${result.scripts.length} scripts; ` +
+            `quotes kept ${g.quotesKept}, fixed ${g.quotesFixed}, dropped ${g.quotesDropped}` +
+            (result.noDraftsReason ? `; no drafts because: ${result.noDraftsReason}` : ""),
+        );
+      }
       await ctx.runMutation(internal.processor.saveResults, { callId, result });
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown processing error";
