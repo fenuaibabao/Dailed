@@ -6,6 +6,7 @@ import {
 } from "../../convex/lib/processing";
 import { buildSessionPrompt } from "../../convex/lib/sessionPrompt";
 import { MAX_WEAVES_PER_SESSION, buildWeaveInput, resolveAssignments } from "../../convex/lib/weaving";
+import { flagUnmatchedNumbers, unmatchedNumbers } from "../../convex/lib/numbers";
 import { redact } from "../../convex/lib/redaction";
 import { checkRetention, effectiveRetention } from "../../convex/lib/retention";
 import { BAA_COVERED_VENDORS, missingBaas } from "../../convex/lib/phi";
@@ -124,5 +125,21 @@ describe("retention", () => {
     expect(effectiveRetention(90, 30)).toBe(30);
     expect(checkRetention(null)).toBeUndefined();
     expect(() => checkRetention(45)).toThrow("INVALID_RETENTION");
+  });
+});
+
+describe("number check", () => {
+  const speech = "Revenue is 14,500 a month, up from 11000. We have 9 months of runway and grew 3.50 percent.";
+  test("finds numbers they never said, ignoring formatting and single digits", () => {
+    expect(unmatchedNumbers("MRR $14500, was $11,000; runway 9 months; growth 3.5%", speech)).toEqual([]);
+    expect(unmatchedNumbers("We have 2,000 users and 3 hires, growing 40%", speech)).toEqual(["2,000", "40"]);
+  });
+
+  test("flags each unsaid number in place, after its unit", () => {
+    expect(flagUnmatchedNumbers("Grew 40% to $2.5M with 14,500 MRR.", speech)).toEqual({
+      text: "Grew 40% [check this number] to $2.5M [check this number] with 14,500 MRR.",
+      flagged: 2,
+    });
+    expect(flagUnmatchedNumbers("Nothing to check.", speech)).toEqual({ text: "Nothing to check.", flagged: 0 });
   });
 });

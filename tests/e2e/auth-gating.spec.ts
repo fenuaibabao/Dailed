@@ -123,20 +123,25 @@ test("sign-in links to sign-up and back", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in$/);
 });
 
-test("each enabled product has a landing page whose Start talking carries the product to sign-up", async ({ page }) => {
-  await page.goto("/clarity");
-  await expect(page.getByText("Warpwork Clarity")).toBeVisible();
-  await page.getByRole("link", { name: "Start talking" }).click();
-  await expect(page).toHaveURL(/\/sign-up\?product=clarity$/);
-  await page.getByRole("link", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/sign-in\?product=clarity$/);
-});
+for (const [slug, name] of [
+  ["clarity", "Warpwork Clarity"],
+  ["founder", "Warpwork Founder"],
+] as const) {
+  test(`/${slug} has a landing page whose Start talking carries the product to sign-up`, async ({ page }) => {
+    await page.goto(`/${slug}`);
+    await expect(page.getByText(name)).toBeVisible();
+    await page.getByRole("link", { name: "Start talking" }).click();
+    await expect(page).toHaveURL(new RegExp(`/sign-up\\?product=${slug}$`));
+    await page.getByRole("link", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(new RegExp(`/sign-in\\?product=${slug}$`));
+  });
+}
 
 test("the home page is Create, and products that aren't ready say coming soon", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Warpwork Create")).toBeVisible();
   await expect(page.getByRole("link", { name: "Start talking" })).toHaveAttribute("href", "/sign-up?product=create");
-  await page.goto("/founder");
+  await page.goto("/legacy");
   await expect(page.getByTestId("coming-soon")).toBeVisible();
   await expect(page.getByRole("link", { name: "Start talking" })).toHaveCount(0);
   expect((await page.goto("/not-a-product"))?.status()).toBe(404);

@@ -9,6 +9,10 @@ export const outputKind = v.union(
   v.literal("script"),
   v.literal("newsletter"),
   v.literal("idea"),
+  // Founder
+  v.literal("investor_update"),
+  v.literal("decision"),
+  v.literal("pitch"),
 );
 
 // "open" is the single Start talking session: Remi asks how much time they
