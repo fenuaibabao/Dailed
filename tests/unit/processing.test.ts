@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   chunkTranscript,
+  groundExcerpt,
   isGroundedExcerpt,
   isLongSession,
   userSpeech,
@@ -35,6 +36,34 @@ describe("transcript helpers", () => {
     expect(isGroundedExcerpt("the scariest part was telling my investors", speech)).toBe(false);
     expect(isGroundedExcerpt("Tell me more about it", speech)).toBe(false); // the AI said it
     expect(isGroundedExcerpt("my parents", speech)).toBe(false); // too short to count
+  });
+
+  test("grounding ignores filler words and returns the user's own wording", () => {
+    const speech = userSpeech("User: So, um, I left my job in March to, uh, build a pottery studio.");
+    expect(groundExcerpt("I left my job in March to build a pottery studio", speech)).toBe(
+      "I left my job in March to, uh, build a pottery studio",
+    );
+  });
+
+  test("a near-quote counts when a long run of it is really theirs, and shows only that run", () => {
+    const speech = userSpeech(
+      "User: My dad just asked whether I had a plan for the kiln, which is the most engineer thing he could have said.",
+    );
+    // The model changed "just asked" to "simply asked" and trimmed the end.
+    expect(
+      groundExcerpt("My dad simply asked whether I had a plan for the kiln, which is the most engineer thing", speech),
+    ).toBe("asked whether I had a plan for the kiln, which is the most engineer thing");
+    // A changed word with too little real text around it still fails.
+    expect(groundExcerpt("My dad simply asked whether I had money", speech)).toBeNull();
+  });
+
+  test("a quote spanning two consecutive user turns grounds, with the AI's line left out", () => {
+    const speech = userSpeech(
+      "User: The first month I sold forty mugs at the farmers market.\nAI: Wow.\nUser: And then a cafe ordered two hundred.",
+    );
+    expect(groundExcerpt("I sold forty mugs at the farmers market and then a cafe ordered two hundred", speech)).toBe(
+      "I sold forty mugs at the farmers market. And then a cafe ordered two hundred",
+    );
   });
 });
 

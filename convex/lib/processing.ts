@@ -102,25 +102,69 @@ export function userSpeech(transcript: string): string {
   return parts.join("\n");
 }
 
-function normalizeForMatch(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[^a-z0-9' ]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+// Transcribers and models disagree on fillers; they never carry meaning here.
+const FILLER_WORDS = new Set(["um", "umm", "uh", "uhh", "er", "erm", "ah", "hmm", "mm", "mhm"]);
+
+type Token = { norm: string; start: number; end: number };
+
+/** Words with their offsets in the original text, ignoring case, punctuation and fillers. */
+function tokenize(text: string): Token[] {
+  const tokens: Token[] = [];
+  for (const match of text.matchAll(/[a-z0-9'‘’]+/gi)) {
+    const norm = match[0].toLowerCase().replace(/[‘’]/g, "'").replace(/^'+|'+$/g, "");
+    if (norm === "" || FILLER_WORDS.has(norm)) continue;
+    tokens.push({ norm, start: match.index, end: match.index + match[0].length });
+  }
+  return tokens;
 }
 
+/** Shortest excerpt that counts at all. */
+export const MIN_EXCERPT_WORDS = 4;
+/** A partial match must still be this long a run of the user's own words. */
+export const MIN_REPAIRED_WORDS = 8;
+
 /**
- * True when the excerpt is something the user actually said: after
- * normalizing case and punctuation, it must appear in their speech. Excerpts
- * under four words are too weak to count.
+ * Returns what the user actually said that backs the excerpt, or null.
+ *
+ * The excerpt counts when it appears word for word in their speech (ignoring
+ * case, punctuation and filler words). Models often quote a long passage with
+ * one word changed or a clause trimmed; then the longest run of the excerpt
+ * that the user really said counts if it is at least MIN_REPAIRED_WORDS long.
+ * Either way the returned text is copied from the user's speech, never from
+ * the model.
  */
+export function groundExcerpt(excerpt: string, speech: string): string | null {
+  const needle = tokenize(excerpt).map((t) => t.norm);
+  if (needle.length < MIN_EXCERPT_WORDS) return null;
+  const hay = tokenize(speech);
+
+  // Longest common run of words (dynamic programming over one row).
+  let best = 0;
+  let bestEnd = -1; // index in hay of the run's last word
+  let prev = new Array<number>(needle.length + 1).fill(0);
+  for (let i = 0; i < hay.length; i++) {
+    const row = new Array<number>(needle.length + 1).fill(0);
+    for (let j = 0; j < needle.length; j++) {
+      if (hay[i].norm === needle[j]) {
+        row[j + 1] = prev[j] + 1;
+        if (row[j + 1] > best) {
+          best = row[j + 1];
+          bestEnd = i;
+        }
+      }
+    }
+    prev = row;
+  }
+
+  if (best < needle.length && best < MIN_REPAIRED_WORDS) return null;
+  const first = hay[bestEnd - best + 1];
+  const last = hay[bestEnd];
+  return speech.slice(first.start, last.end).replace(/\s+/g, " ").trim();
+}
+
+/** True when the excerpt is backed by something the user actually said. */
 export function isGroundedExcerpt(excerpt: string, speech: string): boolean {
-  const needle = normalizeForMatch(excerpt);
-  if (needle.split(" ").length < 4) return false;
-  return normalizeForMatch(speech).includes(needle);
+  return groundExcerpt(excerpt, speech) !== null;
 }
 
 // ---------------------------------------------------------------------------
@@ -131,7 +175,8 @@ const GROUNDING_RULES = `Hard rules:
 - Use only what the USER said in the transcript. Never invent facts, numbers, names, stories, results or opinions they did not express.
 - Write drafts in the user's own voice and phrasing, as if they wrote them.
 - Every post and script must include "source_excerpt": a passage copied word for word from the user's own lines (at least 8 words) that the draft is built on.
-- If there isn't enough material for something, return fewer items or an empty list. Fewer honest drafts beat more invented ones.
+- Copy each "source_excerpt" character for character from one of the user's lines. Don't fix grammar, drop words or join separate lines.
+- If there isn't enough material for something, return fewer items or an empty list. Fewer honest drafts beat more invented ones. But if the user shared even one concrete story, opinion, lesson or plan, write at least one post and one script from it.
 - Ignore the interviewer's (AI's) lines as a source of content; they are only context.`;
 
 export const FINAL_SYSTEM_PROMPT = `You turn an interview transcript into a private session summary, themes and content drafts for the person who was interviewed.
@@ -229,20 +274,18 @@ export function finalizeResult(
 ): ProcessedSession {
   const speech = userSpeech(transcript);
   let dropped = 0;
-  const posts = sensitive
-    ? []
-    : result.posts.filter((p) => {
-        const ok = isGroundedExcerpt(p.source_excerpt, speech);
-        if (!ok) dropped++;
-        return ok;
-      });
-  const scripts = sensitive
-    ? []
-    : result.scripts.filter((s) => {
-        const ok = isGroundedExcerpt(s.source_excerpt, speech);
-        if (!ok) dropped++;
-        return ok;
-      });
+  function grounded<T extends { source_excerpt: string }>(items: T[]) {
+    if (sensitive) return [];
+    const kept: (T & { grounded: string })[] = [];
+    for (const item of items) {
+      const excerpt = groundExcerpt(item.source_excerpt, speech);
+      if (excerpt === null) dropped++;
+      else kept.push({ ...item, grounded: excerpt });
+    }
+    return kept;
+  }
+  const posts = grounded(result.posts);
+  const scripts = grounded(result.scripts);
   return {
     summary: result.session_summary,
     themes: result.themes.slice(0, LIMITS.themes),
@@ -250,18 +293,22 @@ export function finalizeResult(
       platform: p.platform,
       title: p.title,
       body: p.body,
-      sourceExcerpt: p.source_excerpt,
+      sourceExcerpt: p.grounded,
     })),
     scripts: scripts.slice(0, LIMITS.scripts).map((s) => ({
       title: s.title,
       body: formatScript(s),
-      sourceExcerpt: s.source_excerpt,
+      sourceExcerpt: s.grounded,
     })),
     newsletter: sensitive ? null : (result.newsletter ?? null),
     ideas: result.ideas.slice(0, LIMITS.ideas),
     memories: result.memories.slice(0, LIMITS.memories),
     droppedUngrounded: dropped,
   };
+}
+
+function draftCount(session: ProcessedSession): number {
+  return session.posts.length + session.scripts.length;
 }
 
 export async function processTranscript(
@@ -296,10 +343,32 @@ export async function processTranscript(
     finalInput = `Transcript:\n\n${transcript}`;
   }
 
-  const result = await completeValidated(
-    llm,
-    { model: args.model, system: FINAL_SYSTEM_PROMPT + sensitiveNote, user: finalInput },
-    sessionResultSchema,
-  );
-  return finalizeResult(result, transcript, args.sensitive);
+  const request = { model: args.model, system: FINAL_SYSTEM_PROMPT + sensitiveNote, user: finalInput };
+  const result = await completeValidated(llm, request, sessionResultSchema);
+  const first = finalizeResult(result, transcript, args.sensitive);
+  if (args.sensitive || draftCount(first) > 0 || first.droppedUngrounded === 0) return first;
+
+  // Every post and script failed the grounding check. Ask once more, showing
+  // the model which excerpts weren't found, and keep whichever pass grounded more.
+  const rejected = [...result.posts, ...result.scripts]
+    .map((d) => `- "${d.source_excerpt.slice(0, 200)}"`)
+    .join("\n");
+  try {
+    const retry = await completeValidated(
+      llm,
+      {
+        ...request,
+        user:
+          `${finalInput}\n\nYour previous drafts were all discarded because these source_excerpt values ` +
+          `were not found word for word in the user's lines:\n${rejected}\n\n` +
+          "Return the full JSON object again. Copy every source_excerpt exactly from a single user line (at least 8 words).",
+      },
+      sessionResultSchema,
+    );
+    const second = finalizeResult(retry, transcript, args.sensitive);
+    return draftCount(second) > draftCount(first) ? second : first;
+  } catch {
+    // The first pass is still a valid result; a failed retry shouldn't lose it.
+    return first;
+  }
 }

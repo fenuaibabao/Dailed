@@ -150,6 +150,7 @@ export default defineSchema({
     endReason: v.optional(v.string()),
     reportReceivedAt: v.optional(v.number()), // set once by the Vapi webhook
     processingError: v.optional(v.string()),
+    draftsDropped: v.optional(v.number()), // posts/scripts not backed by the user's words
     sensitive: v.boolean(),
   })
     .index("by_user", ["userId"])

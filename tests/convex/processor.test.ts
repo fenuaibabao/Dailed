@@ -93,6 +93,48 @@ describe("processor", () => {
     expect((await t.run((ctx) => ctx.db.get(callId)))?.status).toBe("completed");
   });
 
+  test("when every draft fails grounding, asks once more and keeps the grounded retry", async () => {
+    const invented = {
+      ...GOOD,
+      posts: [{ ...GOOD.posts[0], source_excerpt: "My father wanted to know about the kiln plan" }],
+      scripts: [{ ...GOOD.scripts[0], source_excerpt: "Telling my mom and dad was the hardest bit" }],
+    };
+    fetchMock
+      .mockResolvedValueOnce(openAIReply(JSON.stringify(invented)))
+      .mockResolvedValueOnce(openAIReply(JSON.stringify(GOOD)));
+    const t = newTest();
+    const { userId, client } = await signedInAs(t);
+    const callId = await processingCall(t, userId);
+    await t.action(internal.processor.run, { callId });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retryBody = JSON.parse(String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body));
+    expect(retryBody.messages[1].content).toContain("My father wanted to know about the kiln plan");
+    const outputs = await client.query(api.outputs.forCall, { callId });
+    expect(outputs.filter((o) => o.kind === "post")).toHaveLength(1);
+    expect(outputs.filter((o) => o.kind === "script")).toHaveLength(1);
+    const row = await t.run((ctx) => ctx.db.get(callId));
+    expect(row?.status).toBe("completed");
+    expect(row?.draftsDropped).toBe(1); // the invented "$2M" post in the retry
+  });
+
+  test("keeps the first pass when the grounding retry fails", async () => {
+    const invented = { ...GOOD, posts: [{ ...GOOD.posts[1] }], scripts: [] };
+    fetchMock
+      .mockResolvedValueOnce(openAIReply(JSON.stringify(invented)))
+      .mockResolvedValue(new Response("upstream down", { status: 503 }));
+    const t = newTest();
+    const { userId } = await signedInAs(t);
+    const callId = await processingCall(t, userId);
+    await t.action(internal.processor.run, { callId });
+    const row = await t.run((ctx) => ctx.db.get(callId));
+    expect(row?.status).toBe("completed");
+    expect(row?.draftsDropped).toBe(1);
+    const kinds = (await t.run((ctx) => ctx.db.query("outputs").collect())).map((o) => o.kind);
+    expect(kinds).toContain("session_summary");
+    expect(kinds).not.toContain("post");
+  });
+
   test("retries once on invalid JSON, then succeeds", async () => {
     fetchMock
       .mockResolvedValueOnce(openAIReply("Sure! Here are your drafts: {"))

@@ -103,7 +103,11 @@ export const saveResults = internalMutation({
         sensitive: call.sensitive,
       });
     }
-    await ctx.db.patch(callId, { status: "completed", processingError: undefined });
+    await ctx.db.patch(callId, {
+      status: "completed",
+      processingError: undefined,
+      draftsDropped: result.droppedUngrounded,
+    });
   },
 });
 
@@ -124,6 +128,11 @@ export const run = internalAction({
     if (job === null) return;
     try {
       const result = await processTranscript(getLlmProvider(job.provider), job);
+      // Counts only: transcripts and drafts stay out of logs.
+      console.log(
+        `Processed call ${callId}: ${result.posts.length} posts, ${result.scripts.length} scripts kept; ` +
+          `${result.droppedUngrounded} dropped as ungrounded`,
+      );
       await ctx.runMutation(internal.processor.saveResults, { callId, result });
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown processing error";
