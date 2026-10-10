@@ -91,7 +91,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
   const isLive = activeCall !== undefined && LIVE_STATUSES.includes(activeCall.status);
   const busy = session.starting || isLive;
 
-  const latestCompleted = calls?.find((c) => c.status === "completed") ?? null;
+  const latestCompleted = calls?.find((c) => c.status === "completed" && !c.contentDeleted) ?? null;
   const shownCallId =
     selectedCallId ??
     (activeCall?.status === "completed" ? activeCall._id : null) ??
@@ -196,7 +196,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
                   <button
                     type="button"
                     onClick={() => setSelectedCallId(call._id)}
-                    disabled={call.status !== "completed"}
+                    disabled={call.status !== "completed" || call.contentDeleted}
                     aria-current={call._id === shownCallId ? "true" : undefined}
                     className="flex w-full items-center justify-between gap-3 py-2 text-left disabled:cursor-default aria-[current=true]:font-medium"
                   >
@@ -205,7 +205,9 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
                       {call.productName ?? MODE_LABEL[call.mode]}
                       {call.durationSeconds !== null && ` · ${formatDuration(call.durationSeconds)}`}
                     </span>
-                    <span className="shrink-0 text-sm text-muted">{STATUS_LABEL[call.status]}</span>
+                    <span className="shrink-0 text-sm text-muted">
+                      {call.contentDeleted ? "Deleted" : STATUS_LABEL[call.status]}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -218,7 +220,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
 
       <div className="min-w-0">
         {shownCallId !== null ? (
-          <SessionResults callId={shownCallId} />
+          <SessionResults callId={shownCallId} onDeleted={() => setSelectedCallId(null)} />
         ) : (
           <div className="rounded-lg border border-dashed border-border p-8 text-muted">
             After your first session, your summary, themes and drafts appear here.

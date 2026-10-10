@@ -16,6 +16,9 @@ export default function SignedInLayout({ children }: { children: ReactNode }) {
           <Link href="/app/workspaces" className="text-sm">
             Workspaces
           </Link>
+          <Link href="/app/privacy" className="text-sm">
+            Your data
+          </Link>
           <SignOutButton />
         </nav>
       </header>

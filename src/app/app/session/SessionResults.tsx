@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { CopyButton } from "./CopyButton";
@@ -12,7 +13,42 @@ const DRAFT_SECTIONS = [
   { kind: "idea", heading: "Ideas for next time" },
 ] as const;
 
-export function SessionResults({ callId }: { callId: Id<"calls"> }) {
+function DeleteSession({ callId, onDeleted }: { callId: Id<"calls">; onDeleted?: () => void }) {
+  const deleteSession = useMutation(api.privacy.deleteSession);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="border-t border-border pt-4">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={async () => {
+          if (!window.confirm("Delete this session's transcript, drafts and memories? This can't be undone.")) return;
+          setPending(true);
+          setError(null);
+          try {
+            await deleteSession({ callId });
+            onDeleted?.();
+          } catch {
+            setError("We couldn't delete this session. Please try again.");
+          } finally {
+            setPending(false);
+          }
+        }}
+        className="rounded-md border border-border px-3 py-1.5 text-sm text-danger disabled:opacity-60"
+      >
+        {pending ? "Deleting…" : "Delete this session"}
+      </button>
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onDeleted?: () => void }) {
   const outputs = useQuery(api.outputs.forCall, { callId });
   const weaves = useQuery(api.weaves.forCall, { callId });
   if (outputs === undefined) return <p className="text-muted">Loading results…</p>;
@@ -93,6 +129,7 @@ export function SessionResults({ callId }: { callId: Id<"calls"> }) {
           </section>
         );
       })}
+      <DeleteSession callId={callId} onDeleted={onDeleted} />
     </div>
   );
 }

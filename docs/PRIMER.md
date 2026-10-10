@@ -84,7 +84,8 @@ I don't want to break any laws. Have legal review before launch.
   - #7 Remi turn-taking: Remi waits longer before replying, set in code (`convex/lib/turnTaking.ts`) instead of the Vapi dashboard.
   - #6 Section 2: products as configuration. Create and Clarity are live products with landing pages at `/create` and `/clarity`; Founder, Legacy, Voices and Intake show "coming soon". The session page has one Start talking button.
   - #8 Section 3: Weaves. After each session its main topics are filed into Weaves (new or existing), shown on the session page. Only sessions from #8 onward are woven.
-- Open, OK'd to merge once green ("merge all three"): **#9, section 4 (workspaces, roles, `phi_mode`)**. Workspaces at `/app/workspaces` with owner/admin/member roles and invite codes; new sessions record the chosen workspace; health-data mode blocks sessions in that workspace until every vendor has a BAA.
+  - #9 Section 4: workspaces, roles and `phi_mode`. Workspaces at `/app/workspaces` with owner/admin/member roles and invite codes; new sessions record the chosen workspace; health-data mode blocks sessions in that workspace until every vendor has a BAA.
+- Open, OK'd to merge once green ("merge all three"): **#10, section 5 (audit log, retention, redaction, export)**. An append-only audit log; keep-forever by default or 30/90/365-day retention per person and per workspace, applied by a daily cleanup; optional transcript redaction (always on in health-data mode); a "Your data" page with a full JSON download; deleting a single session.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
@@ -160,6 +161,7 @@ Keep the LLM behind a provider interface so we can switch to a BAA-covered model
 - outputs (session_summary/theme/post/script/newsletter/idea, source_excerpt, status draft/approved/exported)
 - weaves and weaveLinks (section 3)
 - orgs (name, phiMode, inviteCode) and memberships (role owner/admin/member); users.activeOrgId and calls.orgId (section 4)
+- auditLog (append-only); retentionDays and redactTranscripts on users and orgs; calls.purgedAt (section 5)
 
 Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive `userId` from auth; never trust a client-supplied id.
 
@@ -203,7 +205,7 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - Convex MCP stays on **dev**. Production changes happen only through normal reviewed deploys.
 - Consent is a launch blocker. Store the exact consent text, time, IP and device. Disclose AI and recording on every session.
 - For phone calls (later): AI voices count as "artificial voice" under the TCPA. Calling hours are 8am–9pm local only, and "stop calling me" revokes consent.
-- Users can view, edit and delete memories. Deleting an account removes content but keeps consent records. (Not built yet; part of workspace polish.)
+- Users can view, edit and delete memories. Deleting an account removes content but keeps consent records. (Not built yet; part of workspace polish. Deleting a single session and exporting all data arrive with section 5.)
 - Have a lawyer review the terms, privacy policy, consent text, the 18+ mode and healthcare claims before charging anyone.
 
 ## 13. Decision log (append as we go)
@@ -224,6 +226,8 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-10: Clarity outputs are a private summary, themes and open threads, with no posts, scripts or newsletter. Clarity has its own memory, separate from Create.
 - 2026-10-10: Workspaces (orgs) are optional; personal use needs none. Roles are owner, admin and member. People join with an invite code, not email. Sessions stay private to the person even inside a workspace; sharing with a team comes with Voices and Intake.
 - 2026-10-10: `phi_mode` ("health-data mode") is per workspace and set by owners. Until Vapi, Convex, Vercel and the model provider have all signed BAAs, a health-data workspace can't run sessions at all. The list of BAA-covered vendors lives in code (`convex/lib/phi.ts`), so changing it is a reviewed change.
+- 2026-10-10: Retention defaults to keeping everything. Deleting content keeps the session's dated row (date, length, cost) as a record; consents and the audit log are never deleted. The shorter of a person's and a workspace's limit wins.
+- 2026-10-10: Redaction is pattern-based (emails and any 9+ digit run) and applied before a transcript is stored or sent to a model; with redaction on, the recording link isn't kept because the audio can't be redacted. It's a safety net, not de-identification.
 - 2026-10-10: Weaves are per person and per product. A session joins up to 3 weaves; an existing weave keeps its name and its summary is updated each time. Sensitive sessions only join sensitive weaves. Weaving runs after a session's drafts are saved, and a weaving failure never affects the drafts.
 
 ## 14. Open questions

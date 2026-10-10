@@ -35,6 +35,24 @@ export const memoryKind = v.union(
 
 export const orgRole = v.union(v.literal("owner"), v.literal("admin"), v.literal("member"));
 
+export const auditAction = v.union(
+  v.literal("org.create"),
+  v.literal("org.rename"),
+  v.literal("org.join"),
+  v.literal("org.role_change"),
+  v.literal("org.member_remove"),
+  v.literal("org.leave"),
+  v.literal("org.phi_mode"),
+  v.literal("org.invite_reset"),
+  v.literal("org.retention"),
+  v.literal("org.redaction"),
+  v.literal("user.retention"),
+  v.literal("user.redaction"),
+  v.literal("data.export"),
+  v.literal("session.delete"),
+  v.literal("retention.purge"),
+);
+
 export const llmProvider = v.union(
   v.literal("openai"),
   v.literal("anthropic"),
@@ -58,9 +76,12 @@ export default defineSchema({
     timezone: v.optional(v.string()), // IANA name, captured at sign-up
     dateOfBirth: v.optional(v.string()), // YYYY-MM-DD
     activeOrgId: v.optional(v.id("orgs")), // the workspace new sessions belong to; none = personal
+    retentionDays: v.optional(v.number()), // delete session content after this many days; none = keep
+    redactTranscripts: v.optional(v.boolean()), // hide emails, phone and ID numbers in transcripts
   })
     .index("email", ["email"])
-    .index("phone", ["phone"]),
+    .index("phone", ["phone"])
+    .index("by_retention", ["retentionDays"]),
 
   // Proof of opt-in. Never deleted, including on account deletion.
   consents: defineTable({
@@ -167,12 +188,14 @@ export default defineSchema({
     ),
     noDraftsReason: v.optional(v.string()), // set when a long enough session got no post or no script
     wovenAt: v.optional(v.number()), // set once the session has been grouped into Weaves
+    purgedAt: v.optional(v.number()), // content deleted (retention or by the user); the row stays as a record
     sensitive: v.boolean(),
   })
     .index("by_user", ["userId"])
     .index("by_user_app", ["userId", "appId"])
     .index("by_vapi_call_id", ["vapiCallId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_org", ["orgId"]),
 
   memories: defineTable({
     userId: v.id("users"),
@@ -244,7 +267,11 @@ export default defineSchema({
     // (see convex/lib/phi.ts).
     phiMode: v.boolean(),
     inviteCode: v.string(), // shared by admins; joining needs no email
-  }).index("by_invite_code", ["inviteCode"]),
+    retentionDays: v.optional(v.number()), // applies to sessions in this workspace; the stricter limit wins
+    redactTranscripts: v.optional(v.boolean()), // always on while phiMode is on
+  })
+    .index("by_invite_code", ["inviteCode"])
+    .index("by_retention", ["retentionDays"]),
 
   memberships: defineTable({
     orgId: v.id("orgs"),
@@ -255,4 +282,18 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_user", ["userId"])
     .index("by_org_user", ["orgId", "userId"]),
+
+  // Append-only record of who did what. Never holds session content.
+  // Nothing updates or deletes these rows.
+  auditLog: defineTable({
+    action: auditAction,
+    actorId: v.optional(v.id("users")), // none = the system (e.g. retention)
+    userId: v.optional(v.id("users")), // whose account or data it concerns
+    orgId: v.optional(v.id("orgs")),
+    targetId: v.optional(v.string()),
+    details: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean(), v.null()))),
+    at: v.number(),
+  })
+    .index("by_org_at", ["orgId", "at"])
+    .index("by_user_at", ["userId", "at"]),
 });
