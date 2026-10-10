@@ -44,6 +44,11 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
   "calls:get": async ({ t, userId }) => ({ callId: await insertCall(t, userId) }),
   "calls:listMine": async () => ({}),
   "outputs:forCall": async ({ t, userId }) => ({ callId: await insertCall(t, userId) }),
+  "weaves:listMine": async ({ t }) => {
+    await seedApp(t);
+    return { product: "create" };
+  },
+  "weaves:forCall": async ({ t, userId }) => ({ callId: await insertCall(t, userId) }),
 };
 
 type FunctionKind = "query" | "mutation" | "action";

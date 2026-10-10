@@ -118,6 +118,8 @@ export const saveResults = internalMutation({
       grounding: result.grounding,
       noDraftsReason: result.noDraftsReason ?? undefined,
     });
+    // Group the session into the person's weaves (topics across sessions).
+    await ctx.scheduler.runAfter(0, internal.weaves.weaveCall, { callId });
   },
 });
 

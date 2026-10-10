@@ -5,6 +5,7 @@ import {
   userSpeech,
 } from "../../convex/lib/processing";
 import { buildSessionPrompt } from "../../convex/lib/sessionPrompt";
+import { MAX_WEAVES_PER_SESSION, buildWeaveInput, resolveAssignments } from "../../convex/lib/weaving";
 
 describe("transcript helpers", () => {
   test("chunks on line boundaries without losing text", () => {
@@ -46,5 +47,31 @@ describe("buildSessionPrompt", () => {
   test("leaves out the focus line when blank", () => {
     const prompt = buildSessionPrompt({ basePrompt: "BASE", mode: "quick", memories: [], recentSummaries: [], focus: "  " });
     expect(prompt).not.toContain("Today's focus");
+  });
+});
+
+describe("weaving", () => {
+  test("caps a session at three weaves and keeps existing weave names", () => {
+    const candidates = [{ id: "a", title: "Podcast", summary: "s" }];
+    const item = (ref: string | null, title: string) => ({ ref, title, summary: "x", note: "y" });
+    const assignments = resolveAssignments(
+      { weaves: [item("w1", "Renamed"), item(null, "B"), item(null, "b"), item(null, "C"), item(null, "D")] },
+      candidates,
+    );
+    expect(assignments.map((a) => [a.weaveId, a.title])).toEqual([
+      ["a", "Podcast"],
+      [null, "B"],
+      [null, "C"],
+    ]);
+    expect(MAX_WEAVES_PER_SESSION).toBe(3);
+  });
+
+  test("the prompt lists existing weaves by ref, never by id", () => {
+    const input = buildWeaveInput([{ id: "secret-id", title: "Podcast", summary: "About the show." }], {
+      summary: "You talked.",
+      themes: [],
+    });
+    expect(input).toContain("w1: Podcast. About the show.");
+    expect(input).not.toContain("secret-id");
   });
 });

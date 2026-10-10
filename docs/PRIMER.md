@@ -83,6 +83,7 @@ I don't want to break any laws. Have legal review before launch.
   - #5 Section 1: close-match grounding (`convex/lib/grounding.ts`), at least one post and one script per session of 2+ minutes or a recorded reason, per-session grounding counts. Also added this primer and `CLAUDE.md`.
   - #7 Remi turn-taking: Remi waits longer before replying, set in code (`convex/lib/turnTaking.ts`) instead of the Vapi dashboard.
 - Open, waiting on my OK to merge: **#6, section 2 (products as configuration)**. Create and Clarity are live products with landing pages at `/create` and `/clarity`, and Founder, Legacy, Voices and Intake show "coming soon". The session page has one Start talking button.
+- Built, waiting on #6: **section 3 (Weaves)**, stacked on #6's branch, so it becomes its own PR once #6 merges. After each session, its main topics are filed into Weaves (new or existing) and shown on the session page. Only new sessions are woven; past sessions aren't backfilled.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
@@ -218,6 +219,7 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-10: Claude opens one PR per section and waits for my OK to merge it and before starting the next section.
 - 2026-10-10: Products live in `src/config/products.ts`. Each landing page is `/<slug>` and the home page is Create. The product carries through sign-up as `?product=`. Session length isn't picked up front: Remi asks how much time you have (10 to 90 minutes).
 - 2026-10-10: Clarity outputs are a private summary, themes and open threads, with no posts, scripts or newsletter. Clarity has its own memory, separate from Create.
+- 2026-10-10: Weaves are per person and per product. A session joins up to 3 weaves; an existing weave keeps its name and its summary is updated each time. Sensitive sessions only join sensitive weaves. Weaving runs after a session's drafts are saved, and a weaving failure never affects the drafts.
 
 ## 14. Open questions
 
