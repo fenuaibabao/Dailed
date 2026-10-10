@@ -11,6 +11,7 @@ import {
   SESSION_MODES,
   buildSessionPrompt,
 } from "./lib/sessionPrompt";
+import { REMI_START_SPEAKING_PLAN } from "./lib/turnTaking";
 import { activeRecordingConsent } from "./consents";
 
 // If the end-of-call webhook hasn't arrived this long after the browser saw
@@ -96,6 +97,7 @@ export const start = mutation({
           model: persona.llmModel,
           messages: [{ role: "system" as const, content: systemPrompt }],
         },
+        startSpeakingPlan: REMI_START_SPEAKING_PLAN,
         metadata: { call_id: callId },
       },
     };
