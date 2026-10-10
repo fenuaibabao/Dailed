@@ -81,7 +81,7 @@ I don't want to break any laws. Have legal review before launch.
   - #3 `.mcp.json` with Vercel and Convex MCP (dev only).
   - #4 Section 0: preview builds never use the prod Convex key; `BRAND_NAME = "Warpwork"`. First green preview. Production deploys re-run the seed, so Remi's greeting and the app name follow `BRAND_NAME`.
   - #5 Section 1: close-match grounding (`convex/lib/grounding.ts`), at least one post and one script per session of 2+ minutes or a recorded reason, per-session grounding counts. Also added this primer and `CLAUDE.md`.
-- Next: **section 2 (products as configuration)**, waiting on my OK to start.
+- Open, waiting on my OK to merge: **#6, section 2 (products as configuration)**. Create and Clarity are live products with landing pages at `/create` and `/clarity`, and Founder, Legacy, Voices and Intake show "coming soon". The session page has one Start talking button.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
@@ -214,6 +214,8 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-10: Previews build the site only, against prod Convex, with no prod key and no backend push. A Convex preview/dev deploy key can give them their own backend later.
 - 2026-10-10: Production deploys re-run the idempotent seed so config (brand, persona prompt) reaches prod without a manual step.
 - 2026-10-10: Claude opens one PR per section and waits for my OK to merge it and before starting the next section.
+- 2026-10-10: Products live in `src/config/products.ts`. Each landing page is `/<slug>` and the home page is Create. The product carries through sign-up as `?product=`. Session length isn't picked up front: Remi asks how much time you have (10 to 90 minutes).
+- 2026-10-10: Clarity outputs are a private summary, themes and open threads, with no posts, scripts or newsletter. Clarity has its own memory, separate from Create.
 
 ## 14. Open questions
 

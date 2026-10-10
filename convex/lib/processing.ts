@@ -146,7 +146,9 @@ Return one JSON object:
 Return JSON only.`;
 
 const SENSITIVE_NOTE =
-  "\nThis is a private sensitive session: return empty lists for posts and scripts and null for newsletter.";
+  "\nThis is a private sensitive session: return empty lists for posts and scripts and null for newsletter and no_drafts_reason. This overrides the instruction to write posts and scripts.";
+const PRIVATE_PRODUCT_NOTE =
+  "\nThis session is for private reflection, not publishing: return empty lists for posts and scripts and null for newsletter and no_drafts_reason. This overrides the instruction to write posts and scripts.";
 
 // ---------------------------------------------------------------------------
 // Pipeline
@@ -215,17 +217,18 @@ export function formatScript(script: SessionResult["scripts"][number]): string {
 }
 
 /**
- * Applies caps, the quote check and the sensitive-session rule. A quote that
+ * Applies caps, the quote check and the no-drafts rule (sensitive sessions and
+ * products without posts or scripts). A quote that
  * isn't backed by the user's words is fixed or removed; the draft stays.
  */
 export function finalizeResult(
   result: SessionResult,
   transcript: string,
-  sensitive: boolean,
+  noDrafts: boolean,
 ): ProcessedSession {
   const speech = userSpeech(transcript);
-  const posts = sensitive ? [] : result.posts.slice(0, LIMITS.posts);
-  const scripts = sensitive ? [] : result.scripts.slice(0, LIMITS.scripts);
+  const posts = noDrafts ? [] : result.posts.slice(0, LIMITS.posts);
+  const scripts = noDrafts ? [] : result.scripts.slice(0, LIMITS.scripts);
   const grounding: GroundingStats = {
     drafts: posts.length + scripts.length,
     quotesKept: 0,
@@ -254,11 +257,11 @@ export function finalizeResult(
       body: formatScript(s),
       sourceExcerpt: checkQuote(s.source_excerpt),
     })),
-    newsletter: sensitive ? null : (result.newsletter ?? null),
+    newsletter: noDrafts ? null : (result.newsletter ?? null),
     ideas: result.ideas.slice(0, LIMITS.ideas),
     memories: result.memories.slice(0, LIMITS.memories),
     grounding,
-    noDraftsReason: sensitive || hasBoth ? null : (result.no_drafts_reason ?? null),
+    noDraftsReason: noDrafts || hasBoth ? null : (result.no_drafts_reason ?? null),
   };
 }
 
@@ -278,11 +281,19 @@ const MISSING_DRAFTS_NOTE =
 
 export async function processTranscript(
   llm: LlmProvider,
-  args: { model: string; transcript: string; durationSeconds?: number; sensitive: boolean },
+  args: {
+    model: string;
+    transcript: string;
+    durationSeconds?: number;
+    sensitive: boolean;
+    /** False for products whose outputs have no posts or scripts (e.g. Clarity). */
+    drafts?: boolean;
+  },
 ): Promise<ProcessedSession> {
   const transcript = args.transcript.trim();
   if (transcript.length === 0) throw new ProcessingError("Empty transcript");
-  const sensitiveNote = args.sensitive ? SENSITIVE_NOTE : "";
+  const noDrafts = args.sensitive || args.drafts === false;
+  const sensitiveNote = args.sensitive ? SENSITIVE_NOTE : noDrafts ? PRIVATE_PRODUCT_NOTE : "";
 
   let finalInput: string;
   if (isLongSession(transcript, args.durationSeconds)) {
@@ -310,11 +321,11 @@ export async function processTranscript(
 
   const request = { model: args.model, system: FINAL_SYSTEM_PROMPT + sensitiveNote, user: finalInput };
   const result = await completeValidated(llm, request, sessionResultSchema);
-  const first = finalizeResult(result, transcript, args.sensitive);
+  const first = finalizeResult(result, transcript, noDrafts);
   const longEnough =
     (args.durationSeconds ?? 0) >= MIN_DRAFT_SESSION_SECONDS || isLongSession(transcript, args.durationSeconds);
   const missing = first.posts.length === 0 || first.scripts.length === 0;
-  if (args.sensitive || !longEnough || !missing) return first;
+  if (noDrafts || !longEnough || !missing) return first;
 
   // Ask once more. Keep whichever pass has more drafts; a failed retry keeps the first.
   let best = first;
@@ -324,7 +335,7 @@ export async function processTranscript(
       { ...request, user: request.user + MISSING_DRAFTS_NOTE },
       sessionResultSchema,
     );
-    const second = finalizeResult(retry, transcript, args.sensitive);
+    const second = finalizeResult(retry, transcript, noDrafts);
     if (draftScore(second) > draftScore(first)) best = second;
   } catch {
     // keep the first pass

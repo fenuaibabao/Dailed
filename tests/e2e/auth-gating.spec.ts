@@ -123,7 +123,31 @@ test("sign-in links to sign-up and back", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in$/);
 });
 
-for (const path of ["/", "/sign-in", "/sign-up"]) {
+test("each enabled product has a landing page whose Start talking carries the product to sign-up", async ({ page }) => {
+  await page.goto("/clarity");
+  await expect(page.getByText("Warpwork Clarity")).toBeVisible();
+  await page.getByRole("link", { name: "Start talking" }).click();
+  await expect(page).toHaveURL(/\/sign-up\?product=clarity$/);
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/sign-in\?product=clarity$/);
+});
+
+test("the home page is Create, and products that aren't ready say coming soon", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("Warpwork Create")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start talking" })).toHaveAttribute("href", "/sign-up?product=create");
+  await page.goto("/founder");
+  await expect(page.getByTestId("coming-soon")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start talking" })).toHaveCount(0);
+  expect((await page.goto("/not-a-product"))?.status()).toBe(404);
+});
+
+test("signed-out visitors to a product's session page keep the product through sign-in", async ({ page }) => {
+  await page.goto("/app/session?product=clarity");
+  await expect(page).toHaveURL(/\/sign-in\?product=clarity$/);
+});
+
+for (const path of ["/", "/clarity", "/sign-in", "/sign-up"]) {
   test(`${path} never loads Vapi or asks for the microphone, and fits the viewport`, async ({ page }) => {
     const watch = await watchForMicAndVapi(page);
     await page.goto(path);

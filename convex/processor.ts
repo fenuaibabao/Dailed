@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { getLlmProvider } from "./lib/llm";
 import { processTranscript } from "./lib/processing";
+import { producesDrafts } from "../src/config/products";
 import { memoryKind } from "./schema";
 
 export const loadJob = internalQuery({
@@ -12,7 +13,9 @@ export const loadJob = internalQuery({
     if (call === null || call.status !== "processing" || !call.transcript) return null;
     const persona = await ctx.db.get(call.personaId);
     if (persona === null) return null;
+    const app = await ctx.db.get(call.appId);
     return {
+      drafts: app === null ? true : producesDrafts(app.outputTemplates),
       transcript: call.transcript,
       durationSeconds: call.durationSeconds,
       sensitive: call.sensitive,

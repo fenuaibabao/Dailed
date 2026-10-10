@@ -11,7 +11,7 @@ import {
   type FieldErrors,
   type Mode,
 } from "@/lib/authForm";
-import { AFTER_AUTH_PATH, SIGN_IN_PATH, SIGN_UP_PATH } from "@/lib/routes";
+import { AFTER_AUTH_PATH, SIGN_IN_PATH, SIGN_UP_PATH, withProduct } from "@/lib/routes";
 import { PasswordInput } from "./PasswordInput";
 
 function browserTimezone(): string {
@@ -35,7 +35,10 @@ function FieldError({ id, error }: { id: string; error?: AuthFormError }) {
   );
 }
 
-export function AuthForm({ mode }: { mode: Mode }) {
+/** product: the enabled product the user entered through, carried to the session page. */
+export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
+  const signInPath = withProduct(SIGN_IN_PATH, product);
+  const signUpPath = withProduct(SIGN_UP_PATH, product);
   const { signIn } = useAuthActions();
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -74,7 +77,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (isSignUp) form.set("timezone", browserTimezone());
     try {
       await signIn("password", form);
-      router.push(AFTER_AUTH_PATH);
+      router.push(withProduct(AFTER_AUTH_PATH, product));
       // Keep the button disabled while navigating away.
     } catch (error) {
       const formError = toAuthFormError(error);
@@ -96,14 +99,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <p>{formError.message}</p>
           {formError.code === AUTH_ERROR.NO_ACCOUNT && (
             <p className="mt-1">
-              <Link href={SIGN_UP_PATH} className="font-medium underline">
+              <Link href={signUpPath} className="font-medium underline">
                 Create an account instead
               </Link>
             </p>
           )}
           {formError.code === AUTH_ERROR.ACCOUNT_EXISTS && (
             <p className="mt-1">
-              <Link href={SIGN_IN_PATH} className="font-medium underline">
+              <Link href={signInPath} className="font-medium underline">
                 Sign in instead
               </Link>
             </p>
@@ -218,14 +221,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {isSignUp ? (
           <>
             Already have an account?{" "}
-            <Link href={SIGN_IN_PATH} className="font-medium text-foreground underline">
+            <Link href={signInPath} className="font-medium text-foreground underline">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New here?{" "}
-            <Link href={SIGN_UP_PATH} className="font-medium text-foreground underline">
+            <Link href={signUpPath} className="font-medium text-foreground underline">
               Create an account
             </Link>
           </>

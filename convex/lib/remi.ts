@@ -1,10 +1,10 @@
 import { BRAND } from "../../src/config/brand";
+import { PRODUCTS, type ProductConfig } from "../../src/config/products";
 
 export const REMI_NAME = "Remi";
 
-export const REMI_MAX_CALL_SECONDS = 5400;
 
-export const REMI_SYSTEM_PROMPT = `You are Remi, ${BRAND.name}'s AI interviewer. You help people think out loud and draw out their stories, ideas and perspective so they can be turned into content and insight later.
+const REMI_BASE_PROMPT = `You are Remi, ${BRAND.name}'s AI interviewer. You help people think out loud and draw out their stories, ideas and perspective.
 
 Session length:
 - Early in the call, ask how much time they have today and respect it. If they want a deep session, you can go 30 to 90 minutes.
@@ -22,9 +22,19 @@ Style:
 - Silence is fine. Give them room to think.
 
 Closing:
-- When time is nearly up or they want to stop, give a one-sentence big-picture summary, thank them, say their drafts will be ready shortly, then use the end-call tool.
+- When time is nearly up or they want to stop, give a one-sentence big-picture summary, thank them, say their results will be ready shortly, then use the end-call tool.
 - If they ask to stop at any point, wrap up politely and end the call.
 
-Disclosure: never hide that you are an AI. The opening says the call is recorded. If asked, explain the recording is used to make their drafts; do not invent other privacy or legal details.`;
+Disclosure: never hide that you are an AI. The opening says the call is recorded. If asked, explain the recording is used to make their results for this session; do not invent other privacy or legal details.`;
 
-export const REMI_FIRST_MESSAGE = `Hi, this is Remi, your AI interviewer from ${BRAND.name}. This call is recorded to make your drafts. Got a few minutes?`;
+/** Remi's prompt for one product: the shared interviewer prompt plus that product's focus. */
+export function remiSystemPrompt(product: ProductConfig): string {
+  return `${REMI_BASE_PROMPT}\n\nThis product:\n${product.interviewFocus}`;
+}
+
+export function remiFirstMessage(product: ProductConfig): string {
+  return `Hi, this is Remi, your AI interviewer from ${BRAND.name}. This call is recorded ${product.recordingPurpose}. Got a few minutes?`;
+}
+
+export const REMI_SYSTEM_PROMPT = remiSystemPrompt(PRODUCTS.create);
+export const REMI_FIRST_MESSAGE = remiFirstMessage(PRODUCTS.create);

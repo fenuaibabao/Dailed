@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { APPS } from "../src/config/brand";
+import { DEFAULT_PRODUCT, getProduct } from "../src/config/products";
 import { requireUserId } from "./lib/auth";
 import { getOwnedCall } from "./lib/ownership";
 import { selectPromptMemories, selectRecentSummaries } from "./lib/promptContext";
@@ -12,18 +12,18 @@ import {
   buildSessionPrompt,
 } from "./lib/sessionPrompt";
 import { activeRecordingConsent } from "./consents";
-import { callMode } from "./schema";
 
 // If the end-of-call webhook hasn't arrived this long after the browser saw
 // the call end, the call is marked failed instead of spinning forever.
 export const REPORT_TIMEOUT_MS = 10 * 60 * 1000;
 
 /** Fields the browser is allowed to see. Transcript is left out of lists. */
-function publicCall(call: Doc<"calls">) {
+function publicCall(call: Doc<"calls">, productName: string | null = null) {
   return {
     _id: call._id,
     _creationTime: call._creationTime,
     mode: call.mode,
+    productName,
     status: call.status,
     focus: call.focus ?? null,
     startedAt: call.startedAt ?? null,
@@ -38,17 +38,22 @@ function publicCall(call: Doc<"calls">) {
  * Vapi web call. The prompt is assembled here, server side.
  */
 export const start = mutation({
-  args: { mode: callMode, focus: v.optional(v.string()) },
-  handler: async (ctx, { mode, focus }) => {
+  args: { product: v.optional(v.string()), focus: v.optional(v.string()) },
+  handler: async (ctx, { product: productSlug, focus }) => {
     const userId = await requireUserId(ctx);
+    // The product comes from the page the user entered through. Unknown or
+    // not-yet-enabled products are refused rather than silently swapped.
+    const product = getProduct(productSlug ?? DEFAULT_PRODUCT);
+    if (product === null || !product.enabled) throw new ConvexError("PRODUCT_UNAVAILABLE");
     if ((await activeRecordingConsent(ctx, userId)) === null) {
       throw new ConvexError("RECORDING_CONSENT_REQUIRED");
     }
     const trimmedFocus = focus?.trim().slice(0, FOCUS_MAX_LENGTH) || undefined;
+    const mode = "open" as const;
 
     const app = await ctx.db
       .query("apps")
-      .withIndex("by_slug", (q) => q.eq("slug", APPS.create.slug))
+      .withIndex("by_slug", (q) => q.eq("slug", product.slug))
       .unique();
     const persona =
       app?.defaultPersonaId !== undefined ? await ctx.db.get(app.defaultPersonaId) : null;
@@ -168,7 +173,8 @@ export const get = query({
   handler: async (ctx, { callId }) => {
     const userId = await requireUserId(ctx);
     const call = await getOwnedCall(ctx, userId, callId);
-    return { ...publicCall(call), processingError: call.processingError ?? null };
+    const app = await ctx.db.get(call.appId);
+    return { ...publicCall(call, app?.name ?? null), processingError: call.processingError ?? null };
   },
 });
 
@@ -181,6 +187,11 @@ export const listMine = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .take(25);
-    return calls.map(publicCall);
+    const appNames = new Map<string, string>();
+    for (const appId of new Set(calls.map((c) => c.appId))) {
+      const app = await ctx.db.get(appId);
+      if (app !== null) appNames.set(appId, app.name);
+    }
+    return calls.map((call) => publicCall(call, appNames.get(call.appId) ?? null));
   },
 });

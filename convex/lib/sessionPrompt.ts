@@ -11,6 +11,11 @@ export const SESSION_MODES = {
     maxDurationSeconds: 5400,
     promptSuffix: "This is a deep session; the user has set aside up to 90 minutes.",
   },
+  open: {
+    maxDurationSeconds: 5400,
+    promptSuffix:
+      "The user didn't pick a length. Early on, ask how much time they have today (anything from 10 to 90 minutes) and pace the session to it.",
+  },
 } as const satisfies Record<SessionMode, { maxDurationSeconds: number; promptSuffix: string }>;
 
 export const MEMORY_LIMIT = 15;

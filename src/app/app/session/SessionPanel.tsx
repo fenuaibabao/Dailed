@@ -4,7 +4,6 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
-import { APPS } from "@/config/brand";
 import { RECORDING_CONSENT_TEXT } from "@/lib/consent";
 import { grantRecordingConsent } from "./actions";
 import { SessionResults } from "./SessionResults";
@@ -68,7 +67,12 @@ function ConsentBox() {
   );
 }
 
-export function SessionPanel() {
+/** The product this page runs, chosen by the URL the user came in through. */
+export type SessionProduct = { slug: string; name: string };
+
+const MODE_LABEL: Record<Doc<"calls">["mode"], string> = { quick: "Quick", deep: "Deep", open: "Session" };
+
+export function SessionPanel({ product }: { product: SessionProduct }) {
   const { isAuthenticated } = useConvexAuth();
   const consent = useQuery(api.consents.myRecordingConsent, isAuthenticated ? {} : "skip");
   const calls = useQuery(api.calls.listMine, isAuthenticated ? {} : "skip");
@@ -96,7 +100,7 @@ export function SessionPanel() {
       <div className="space-y-8">
         <section className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-accent">{APPS.create.name}</p>
+            <p className="text-sm font-medium text-accent">{product.name}</p>
             <h1 className="mt-1 text-2xl font-semibold">Talk it through with Remi</h1>
           </div>
 
@@ -118,23 +122,18 @@ export function SessionPanel() {
             />
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+          <div>
             <button
               type="button"
               disabled={!hasConsent || busy}
-              onClick={() => session.begin("quick", focus)}
-              className="flex-1 rounded-md bg-accent px-4 py-2.5 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => session.begin(product.slug, focus)}
+              className="w-full rounded-md bg-accent px-4 py-2.5 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Quick session (10 min)
+              Start talking
             </button>
-            <button
-              type="button"
-              disabled={!hasConsent || busy}
-              onClick={() => session.begin("deep", focus)}
-              className="flex-1 rounded-md border border-accent px-4 py-2.5 font-medium text-accent disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Deep session (up to 90 min)
-            </button>
+            <p className="mt-2 text-sm text-muted">
+              Remi will ask how much time you have, from 10 minutes up to 90.
+            </p>
           </div>
 
           {session.error && (
@@ -189,7 +188,7 @@ export function SessionPanel() {
                   >
                     <span className="min-w-0 truncate">
                       {formatWhen(call.startedAt ?? call._creationTime)} ·{" "}
-                      {call.mode === "deep" ? "Deep" : "Quick"}
+                      {call.productName ?? MODE_LABEL[call.mode]}
                       {call.durationSeconds !== null && ` · ${formatDuration(call.durationSeconds)}`}
                     </span>
                     <span className="shrink-0 text-sm text-muted">{STATUS_LABEL[call.status]}</span>
