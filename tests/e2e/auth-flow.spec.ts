@@ -15,7 +15,8 @@ async function signUp(page: import("@playwright/test").Page, email: string) {
   await page.goto("/sign-up");
   await page.getByLabel("Name").fill("Test Creator");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
 }
 
@@ -52,7 +53,7 @@ test("sign out, then sign back in", async ({ page }) => {
   await expect(page).toHaveURL(/\/sign-in$/);
 
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/app\/session$/);
 });
@@ -72,7 +73,7 @@ test("duplicate sign-up says the account exists and links to sign in", async ({ 
 test("sign-in with an unknown email offers sign-up", async ({ page }) => {
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill(uniqueEmail());
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("alert")).toContainText("couldn't find an account");
   await page.getByRole("alert").getByRole("link", { name: "Create an account instead" }).click();
@@ -87,7 +88,8 @@ test("double-clicking submit sends one sign-up request", async ({ page }) => {
   await page.goto("/sign-up");
   await page.getByLabel("Name").fill("Test Creator");
   await page.getByLabel("Email").fill(uniqueEmail());
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm password").fill(password);
   await page.getByRole("button", { name: "Create account" }).dblclick();
   await expect(page).toHaveURL(/\/app\/session$/);
   expect(signInCalls).toHaveLength(1);

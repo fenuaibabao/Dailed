@@ -5,8 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { AUTH_ERROR, toAuthFormError, type AuthFormError } from "@/lib/authErrors";
-import { validateAuthForm, type FieldErrors, type Mode } from "@/lib/authForm";
+import {
+  confirmPasswordError,
+  validateAuthForm,
+  type FieldErrors,
+  type Mode,
+} from "@/lib/authForm";
 import { AFTER_AUTH_PATH, SIGN_IN_PATH, SIGN_UP_PATH } from "@/lib/routes";
+import { PasswordInput } from "./PasswordInput";
 
 function browserTimezone(): string {
   try {
@@ -34,11 +40,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  // The mismatch message waits until the confirm field is left or the form is
+  // submitted, so it doesn't flash while someone is still typing.
+  const [showMismatch, setShowMismatch] = useState(false);
   // State updates are async, so a fast double click could slip past the
   // disabled button. The ref closes that gap.
   const inFlight = useRef(false);
 
   const isSignUp = mode === "signUp";
+  const mismatch = isSignUp ? confirmPasswordError(password, confirmation) : null;
+  const confirmError = showMismatch ? mismatch : null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,7 +65,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
     };
     const clientErrors = validateAuthForm(mode, values);
     setErrors(clientErrors);
-    if (Object.keys(clientErrors).length > 0) return;
+    if (isSignUp) setShowMismatch(true);
+    if (Object.keys(clientErrors).length > 0 || mismatch !== null) return;
 
     inFlight.current = true;
     setSubmitting(true);
@@ -135,10 +149,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <label htmlFor="password" className="mb-1 block text-sm font-medium">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           autoComplete={isSignUp ? "new-password" : "current-password"}
           className={inputClass}
           aria-invalid={errors.password !== undefined}
@@ -156,9 +171,38 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <FieldError id="password-error" error={errors.password} />
       </div>
 
+      {isSignUp && (
+        <div>
+          <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium">
+            Confirm password
+          </label>
+          {/* No name attribute: the confirmation is left out of the form data
+              sent to the server. */}
+          <PasswordInput
+            id="confirm-password"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            onBlur={(e) => {
+              // Tapping this field's own eye button isn't "leaving" it.
+              if (e.relatedTarget?.getAttribute("aria-controls") === "confirm-password") return;
+              setShowMismatch(true);
+            }}
+            autoComplete="new-password"
+            className={inputClass}
+            aria-invalid={confirmError !== null}
+            aria-describedby={confirmError !== null ? "confirm-password-error" : undefined}
+          />
+          {confirmError !== null && (
+            <p id="confirm-password-error" className="mt-1 text-sm text-danger">
+              {confirmError}
+            </p>
+          )}
+        </div>
+      )}
+
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || mismatch !== null}
         className="w-full rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting
