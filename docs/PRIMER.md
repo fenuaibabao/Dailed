@@ -84,7 +84,7 @@ I don't want to break any laws. Have legal review before launch.
 - Next: **section 2 (products as configuration)**, waiting on my OK to start.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
-- Open, waiting on my OK to merge: **Remi turn-taking fix**. Remi waits longer before replying, set in code instead of the Vapi dashboard.
+- Open, waiting on my OK to merge: **#7, Remi turn-taking fix**. Remi waits longer before replying, set in code instead of the Vapi dashboard.
 
 ## 6. Roadmap (in order)
 
