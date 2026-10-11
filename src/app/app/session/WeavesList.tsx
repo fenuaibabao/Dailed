@@ -23,7 +23,7 @@ export function WeavesList({
 
   return (
     <section data-testid="weaves">
-      <h2 className="text-lg font-semibold">Weaves</h2>
+      <h2 className="section-title">Weaves</h2>
       <p className="mt-1 text-sm text-muted">Topics that keep coming up across your sessions.</p>
       {weaves === undefined ? (
         <p className="mt-2 text-muted">Loading…</p>
@@ -32,16 +32,16 @@ export function WeavesList({
       ) : (
         <ul className="mt-3 space-y-2">
           {weaves.map((weave) => (
-            <li key={weave._id} className="rounded-lg border border-border bg-surface">
+            <li key={weave._id} className="card overflow-hidden">
               <details>
-                <summary className="cursor-pointer list-none p-3">
+                <summary className="cursor-pointer list-none p-4 hover:bg-surface-2/60">
                   <span className="font-medium">{weave.title}</span>
                   <span className="block text-sm text-muted">
                     {weave.sessionCount} {weave.sessionCount === 1 ? "session" : "sessions"} · last{" "}
                     {formatDay(weave.updatedAt)}
                   </span>
                 </summary>
-                <div className="space-y-3 border-t border-border p-3">
+                <div className="space-y-3 border-t border-border p-4">
                   <p className="text-sm leading-relaxed">{weave.summary}</p>
                   <ul className="space-y-1">
                     {weave.sessions.map((s) => (
@@ -50,7 +50,7 @@ export function WeavesList({
                           type="button"
                           onClick={() => onSelectCall(s.callId)}
                           aria-current={s.callId === shownCallId ? "true" : undefined}
-                          className="w-full text-left text-sm aria-[current=true]:font-medium"
+                          className="min-h-9 w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface-2 aria-[current=true]:bg-accent-surface aria-[current=true]:font-medium"
                         >
                           <span className="text-muted">{formatDay(s.when)}:</span> {s.note}
                         </button>

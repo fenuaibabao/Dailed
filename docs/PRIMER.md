@@ -72,7 +72,7 @@ I don't want to break any laws. Have legal review before launch.
 - No WARPWORK/WARPWORKS marks found in my quick search. Still to do: domain and social handles, plus a proper trademark clearance before launch.
 - "Suite" is the word for the product family.
 
-## 5. Current state (2026-10-10, verify with git)
+## 5. Current state (2026-10-11, verify with git)
 
 - Repo **fenuaibabao/Dailed**, live at **https://dailed.vercel.app**.
 - Merged:
@@ -87,7 +87,8 @@ I don't want to break any laws. Have legal review before launch.
   - #9 Section 4: workspaces, roles and `phi_mode`. Workspaces at `/app/workspaces` with owner/admin/member roles and invite codes; new sessions record the chosen workspace; health-data mode blocks sessions in that workspace until every vendor has a BAA.
   - #10 Section 5: audit log, retention, redaction, export. An append-only audit log; keep-forever by default or 30/90/365-day retention per person and per workspace, applied by a daily cleanup; optional transcript redaction (always on in health-data mode); a "Your data" page at `/app/privacy` with a full JSON download; deleting a single session.
   - #11 Founder enabled. Weekly check-in at `/founder` producing a weekly reflection, investor update, decision log, pitch narrative (when there's enough) and threads for next week; numbers the founder didn't say are flagged "[check this number]".
-- All six suite sections (0 to 5) are merged. Next items come from the "Later, ask before starting each" list in section 6.
+- All six suite sections (0 to 5) are merged.
+- Now: the redesign (section 6, "Redesign"). Step 1, the style system, is open as a PR and waits on my OK to merge.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
@@ -104,6 +105,16 @@ I don't want to break any laws. Have legal review before launch.
 3. **Section 3 – Weaves:** automatic topic grouping across sessions.
 4. **Section 4 – Orgs, roles, `phi_mode` flag.**
 5. **Section 5 – Audit log, retention settings, redaction, export.**
+
+**Redesign (one PR per step, desktop and phone screenshots before each merge).** The visual spec is the key-screens canvas: https://claude.ai/artifact/WX93MFV33uV2XQ6nBV9Gwp (23 boards: desktop screens, landing pages, auth and a phone row). Sample names, numbers, prices and counts in it are filler: use real data, and don't build anything just because it appears in a sample.
+1. Style system: colors, type, cards, buttons, dark sidebar, phone bottom nav. Applied everywhere without changing features.
+2. Public pages: Create landing (`/`) and Clarity landing (`/clarity`) from the shared template.
+3. Auth: sign in, sign up (eye icons, confirm password, inline errors), consent step.
+4. Live session screen (dark): big current question, live transcript, Mute / Change topic / End, AI and recording label, a timer to the time the person said they have. "Big picture so far" and the Weaves panel stay hidden placeholders for now.
+5. Writing your drafts → Drafts ready, then Session detail.
+6. Content Studio (Copy, Download, Rewrite, Delete with Undo, Approve) and the Sessions list.
+7. Home (first-time and returning) and Settings (memories edit/delete, turn off recording, delete account).
+Later, with their own features: the Weaves screen (section 3) and Plans plus minutes cards (billing).
 
 Later, ask before starting each:
 - Workspace polish: Studio, session detail, settings with memory edit and delete, delete account.
@@ -232,10 +243,4 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-10: Redaction is pattern-based (emails and any 9+ digit run) and applied before a transcript is stored or sent to a model; with redaction on, the recording link isn't kept because the audio can't be redacted. It's a safety net, not de-identification.
 - 2026-10-10: Founder outputs: weekly reflection (summary), themes, one investor update, up to 5 decisions, a pitch narrative only when there's enough, and threads for next week. No posts or scripts. Numbers in the investor update or pitch must be ones the founder said; the model is asked once more, then leftovers are flagged "[check this number]" rather than removed.
 - 2026-10-10: Weaves are per person and per product. A session joins up to 3 weaves; an existing weave keeps its name and its summary is updated each time. Sensitive sessions only join sensitive weaves. Weaving runs after a session's drafts are saved, and a weaving failure never affects the drafts.
-
-## 14. Open questions
-
-- Is one 10-minute session a week enough for daily posters, or do they want shorter, more frequent ones?
-- Which product launches publicly first: Create alone, or Create + Clarity?
-- Final name, domain and handles.
-- Beta plan: dogfood with me as user #1 (music and business), then 10 beta creators. Success gate: 6 of 10 post something from their drafts and say they'd pay.
+- 2026-10-11: The key-screens canvas is the visual spec for the redesign, built in 7 steps (section 6). Style: IBM Plex Sans and Mono, warm off-white background (#F2F1ED), white cards with a soft shadow, blue accent (#2F4BD8), a dark sidebar on desktop and a dark bottom tab bar on phones. The app is light-only; dark is used only for the sidebar and the live session screen. Shared pieces live in `src/app/globals.css` (tokens and `.btn`, `.card`, `.field`, `.eyebrow`) and `src/components/shell/AppShell.tsx`. Nav shows only pages that exist; Sessions, Weaves, Studio and Settings join as they're built.

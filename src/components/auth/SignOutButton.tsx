@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SIGN_IN_PATH } from "@/lib/routes";
 
-export function SignOutButton() {
+export function SignOutButton({ className = "btn btn-sm" }: { className?: string }) {
   const { signOut } = useAuthActions();
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -19,7 +19,7 @@ export function SignOutButton() {
         await signOut();
         router.push(SIGN_IN_PATH);
       }}
-      className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-60"
+      className={className}
     >
       {pending ? "Signing out…" : "Sign out"}
     </button>

@@ -16,7 +16,7 @@ export function CopyButton({ text, label = "Copy" }: { text: string; label?: str
           setCopied(false);
         }
       }}
-      className="shrink-0 rounded-md border border-border px-2.5 py-1 text-sm"
+      className="btn btn-sm shrink-0"
       aria-live="polite"
     >
       {copied ? "Copied" : label}

@@ -1,18 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BRAND } from "@/config/brand";
+import { Logo } from "@/components/brand/Logo";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 block text-center text-2xl font-semibold">
-          {BRAND.name}
-        </Link>
-        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-          {children}
-        </div>
-      </div>
+    <main className="flex min-h-screen flex-col items-center gap-7 px-4 pt-14 pb-12">
+      <Link href="/" className="text-foreground no-underline hover:text-foreground">
+        <Logo size={28} />
+      </Link>
+      <div className="card-raised w-full max-w-[440px] p-6 sm:p-10">{children}</div>
     </main>
   );
 }

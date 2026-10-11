@@ -32,13 +32,13 @@ export function PasswordInput({ className, id, ...inputProps }: Props) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative">
-      <input {...inputProps} id={id} type={visible ? "text" : "password"} className={`${className ?? ""} pr-11`} />
+      <input {...inputProps} id={id} type={visible ? "text" : "password"} className={`${className ?? ""} pr-12`} />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Hide password" : "Show password"}
         aria-controls={id}
-        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-muted hover:text-foreground"
+        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-[10px] text-muted hover:text-foreground"
       >
         {visible ? <EyeOffIcon /> : <EyeIcon />}
       </button>
