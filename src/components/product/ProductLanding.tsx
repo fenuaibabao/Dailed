@@ -196,6 +196,11 @@ export function ProductLanding({ product }: { product: ProductConfig }) {
               Coming soon.
             </p>
           )}
+          {product.disclaimer && (
+            <p className="m-0 max-w-[700px] text-[15px] text-muted" data-testid="product-disclaimer">
+              {product.disclaimer}
+            </p>
+          )}
         </section>
 
         {copy && <Steps steps={copy.steps} />}

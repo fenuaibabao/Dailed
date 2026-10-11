@@ -44,6 +44,8 @@ export type ProductConfig = {
   outputs: OutputTemplate[];
   /** Who receives the outputs. Only "self" exists until orgs (section 4). */
   recipient: "self" | "org";
+  /** A plain safety line every page of this product shows, e.g. "not an emergency service". */
+  disclaimer?: string;
 };
 
 const SUMMARY: OutputTemplate = {
@@ -177,8 +179,23 @@ function comingSoon(slug: string, label: string, headline: string, audience: str
   };
 }
 
+// The lead product (docs/PRIMER.md, "Daily MVP"): check-in phone calls for
+// aging parents, set up by an adult child. Listed now so /daily exists; it's
+// enabled once outbound calls and family setup are built.
+const daily: ProductConfig = {
+  ...comingSoon(
+    "daily",
+    "Daily",
+    "A friendly check-in call for your mom or dad, every day.",
+    "For families with aging parents",
+  ),
+  disclaimer:
+    "Daily is a friendly check-in call, not a medical or emergency service. In an emergency, call 911.",
+};
+
 export const PRODUCTS = {
   create,
+  daily,
   clarity,
   founder,
   legacy: comingSoon(

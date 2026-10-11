@@ -150,6 +150,14 @@ test("the home page is Create, and products that aren't ready say coming soon", 
   expect((await page.goto("/not-a-product"))?.status()).toBe(404);
 });
 
+test("/daily is listed as coming soon and says it isn't an emergency service", async ({ page }) => {
+  await page.goto("/daily");
+  await expect(page.getByRole("banner").getByText("Warpwork Daily")).toBeVisible();
+  await expect(page.getByTestId("coming-soon")).toBeVisible();
+  await expect(page.getByTestId("product-disclaimer")).toContainText("not a medical or emergency service");
+  await expect(page.getByRole("link", { name: "Start talking" })).toHaveCount(0);
+});
+
 test("signed-out visitors to a product's session page keep the product through sign-in", async ({ page }) => {
   await page.goto("/app/session?product=clarity");
   await expect(page).toHaveURL(/\/sign-in\?product=clarity$/);

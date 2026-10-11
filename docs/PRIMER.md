@@ -343,3 +343,4 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-11: Email summaries come first; SMS waits until A2P 10DLC registration.
 - 2026-10-11: The brand will likely become a character name; `BRAND_NAME` and `ASSISTANT_NAME` stay as config.
 - 2026-10-11: Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were built before the Daily-first change. They stay live as they are, with no new work until after the pilot. The redesign keeps only the shared base (steps 1–3) and Daily's screens; Create's remaining screens (steps 4–7) are on hold.
+- 2026-10-11: `daily` is in the product config as "coming soon" at `/daily`, with a not-an-emergency-service line on its page. It's switched on once outbound calls and family setup work. The assistant's name is `ASSISTANT_NAME` in `src/config/brand.ts`; Remi's prompt, first words and the UI read it.
