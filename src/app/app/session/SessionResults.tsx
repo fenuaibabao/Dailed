@@ -38,7 +38,7 @@ function DeleteSession({ callId, onDeleted }: { callId: Id<"calls">; onDeleted?:
             setPending(false);
           }
         }}
-        className="rounded-md border border-border px-3 py-1.5 text-sm text-danger disabled:opacity-60"
+        className="btn btn-danger"
       >
         {pending ? "Deleting…" : "Delete this session"}
       </button>
@@ -63,21 +63,21 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
   return (
     <div className="space-y-8" data-testid="session-results">
       {summary && (
-        <section>
+        <section className="card p-6">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-lg font-semibold">Summary</h2>
+            <h2 className="section-title">Summary</h2>
             <CopyButton text={summary.body} />
           </div>
-          <p className="mt-2 leading-relaxed">{summary.body}</p>
+          <p className="mt-3 text-base leading-relaxed text-soft">{summary.body}</p>
         </section>
       )}
 
       {weaves !== undefined && weaves.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold">Part of</h2>
+          <h2 className="section-title">Part of</h2>
           <ul className="mt-2 flex flex-wrap gap-2" aria-label="Weaves this session belongs to">
             {weaves.map((w) => (
-              <li key={w._id} title={w.note} className="rounded-full border border-border bg-surface px-3 py-1 text-sm">
+              <li key={w._id} title={w.note} className="chip">
                 {w.title}
                 {w.sessionCount > 1 && <span className="text-muted"> · {w.sessionCount} sessions</span>}
               </li>
@@ -88,8 +88,8 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
 
       {themes.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold">Themes</h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
+          <h2 className="section-title">Themes</h2>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-soft marker:text-muted">
             {themes.map((t) => (
               <li key={t._id}>{t.body}</li>
             ))}
@@ -102,34 +102,34 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
         if (items.length === 0) return null;
         return (
           <section key={kind}>
-            <h2 className="text-lg font-semibold">{heading}</h2>
+            <h2 className="section-title">{heading}</h2>
             <ul className="mt-3 space-y-3">
               {items.map((item) => {
                 const copyText = item.title ? `${item.title}\n\n${item.body}` : item.body;
                 return (
-                  <li key={item._id} className="rounded-lg border border-border bg-surface p-4">
+                  <li key={item._id} className="card p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         {item.platform && (
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted">
-                            {item.platform}
+                          <p className="mb-1.5">
+                            <span className="tag">{item.platform}</span>
                           </p>
                         )}
-                        {item.title && <h3 className="font-medium">{item.title}</h3>}
+                        {item.title && <h3 className="text-base font-semibold">{item.title}</h3>}
                       </div>
                       <CopyButton text={copyText} />
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap break-words">
+                    <p className="mt-2 whitespace-pre-wrap break-words text-soft">
                       {kind === "decision" && <span className="font-medium">Why: </span>}
                       {item.body}
                     </p>
                     {item.body.includes("[check this number]") && (
-                      <p className="mt-2 text-sm text-muted">
+                      <p className="notice notice-warn mt-3">
                         Numbers marked “check this number” weren&apos;t found in what you said. Fix them before sending.
                       </p>
                     )}
                     {item.sourceExcerpt && (
-                      <blockquote className="mt-3 border-l-2 border-border pl-3 text-sm text-muted">
+                      <blockquote className="mt-3 rounded-[10px] bg-surface-2 px-3.5 py-2.5 text-sm text-soft">
                         You said: “{item.sourceExcerpt}”
                       </blockquote>
                     )}

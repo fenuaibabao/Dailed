@@ -22,14 +22,12 @@ function browserTimezone(): string {
   }
 }
 
-const inputClass =
-  "w-full rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground " +
-  "aria-[invalid=true]:border-danger";
+const inputClass = "field";
 
 function FieldError({ id, error }: { id: string; error?: AuthFormError }) {
   if (error === undefined) return null;
   return (
-    <p id={id} className="mt-1 text-sm text-danger">
+    <p id={id} className="mt-1.5 text-sm text-danger">
       {error.message}
     </p>
   );
@@ -94,7 +92,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
       {formError !== undefined && (
         <div
           role="alert"
-          className="rounded-md border border-danger bg-danger-surface px-3 py-2 text-sm text-danger"
+          className="notice notice-warn"
         >
           <p>{formError.message}</p>
           {formError.code === AUTH_ERROR.NO_ACCOUNT && (
@@ -116,7 +114,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
 
       {isSignUp && (
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium">
+          <label htmlFor="name" className="label">
             Name
           </label>
           <input
@@ -133,7 +131,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
       )}
 
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium">
+        <label htmlFor="email" className="label">
           Email
         </label>
         <input
@@ -149,7 +147,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
       </div>
 
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium">
+        <label htmlFor="password" className="label">
           Password
         </label>
         <PasswordInput
@@ -176,7 +174,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
 
       {isSignUp && (
         <div>
-          <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium">
+          <label htmlFor="confirm-password" className="label">
             Confirm password
           </label>
           {/* No name attribute: the confirmation is left out of the form data
@@ -196,7 +194,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
             aria-describedby={confirmError !== null ? "confirm-password-error" : undefined}
           />
           {confirmError !== null && (
-            <p id="confirm-password-error" className="mt-1 text-sm text-danger">
+            <p id="confirm-password-error" className="mt-1.5 text-sm text-danger">
               {confirmError}
             </p>
           )}
@@ -206,7 +204,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
       <button
         type="submit"
         disabled={submitting || mismatch !== null}
-        className="w-full rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn btn-primary min-h-[52px] w-full rounded-xl text-base"
       >
         {submitting
           ? isSignUp
@@ -221,14 +219,14 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
         {isSignUp ? (
           <>
             Already have an account?{" "}
-            <Link href={signInPath} className="font-medium text-foreground underline">
+            <Link href={signInPath} className="font-medium">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New here?{" "}
-            <Link href={signUpPath} className="font-medium text-foreground underline">
+            <Link href={signUpPath} className="font-medium">
               Create an account
             </Link>
           </>
