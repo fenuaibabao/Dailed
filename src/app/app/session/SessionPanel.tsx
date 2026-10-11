@@ -2,11 +2,11 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
-import { RECORDING_CONSENT_TEXT } from "@/lib/consent";
-import { grantRecordingConsent } from "./actions";
+import { CONSENT_PATH, withProduct } from "@/lib/routes";
 import { SessionResults } from "./SessionResults";
 import { useVapiSession } from "./useVapiSession";
 import { WeavesList } from "./WeavesList";
@@ -34,39 +34,6 @@ function formatDuration(seconds: number | null) {
   if (seconds === null) return "";
   const minutes = Math.max(1, Math.round(seconds / 60));
   return `${minutes} min`;
-}
-
-function ConsentBox() {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <div className="card p-4">
-      <label className="flex cursor-pointer items-start gap-3.5">
-        <input
-          type="checkbox"
-          className="mt-0.5 h-[22px] w-[22px] shrink-0 cursor-pointer"
-          disabled={saving}
-          onChange={async (event) => {
-            if (!event.target.checked) return;
-            setSaving(true);
-            setError(null);
-            const result = await grantRecordingConsent();
-            if (!result.ok) {
-              setError("We couldn't save that. Please try again.");
-              event.target.checked = false;
-            }
-            setSaving(false);
-          }}
-        />
-        <span>{RECORDING_CONSENT_TEXT}</span>
-      </label>
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-danger">
-          {error}
-        </p>
-      )}
-    </div>
-  );
 }
 
 /** The product this page runs, chosen by the URL the user came in through. */
@@ -99,6 +66,12 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
     null;
   const hasConsent = consent !== undefined && consent !== null;
 
+  // Recording consent is a one-time step on its own page.
+  const router = useRouter();
+  useEffect(() => {
+    if (consent === null) router.replace(withProduct(CONSENT_PATH, product.slug));
+  }, [consent, product.slug, router]);
+
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-10">
       <div className="space-y-8">
@@ -117,8 +90,6 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
               </Link>
             </p>
           )}
-
-          {consent === null && <ConsentBox />}
 
           <div>
             <label htmlFor="focus" className="label">

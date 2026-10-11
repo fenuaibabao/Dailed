@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
+import { BRAND } from "@/config/brand";
 import { AUTH_ERROR, toAuthFormError, type AuthFormError } from "@/lib/authErrors";
 import {
   confirmPasswordError,
@@ -11,7 +12,7 @@ import {
   type FieldErrors,
   type Mode,
 } from "@/lib/authForm";
-import { AFTER_AUTH_PATH, SIGN_IN_PATH, SIGN_UP_PATH, withProduct } from "@/lib/routes";
+import { AFTER_AUTH_PATH, CONSENT_PATH, SIGN_IN_PATH, SIGN_UP_PATH, withProduct } from "@/lib/routes";
 import { PasswordInput } from "./PasswordInput";
 
 function browserTimezone(): string {
@@ -24,13 +25,27 @@ function browserTimezone(): string {
 
 const inputClass = "field";
 
-function FieldError({ id, error }: { id: string; error?: AuthFormError }) {
-  if (error === undefined) return null;
+function AlertIcon({ size = 16 }: { size?: number }) {
   return (
-    <p id={id} className="mt-1.5 text-sm text-danger">
-      {error.message}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="mt-0.5 flex-none">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v6M12 16.5v.5" />
+    </svg>
+  );
+}
+
+function ErrorLine({ id, message }: { id: string; message: string }) {
+  return (
+    <p id={id} className="mt-1.5 flex items-start gap-1.5 text-sm text-danger">
+      <AlertIcon />
+      <span>{message}</span>
     </p>
   );
+}
+
+function FieldError({ id, error }: { id: string; error?: AuthFormError }) {
+  if (error === undefined) return null;
+  return <ErrorLine id={id} message={error.message} />;
 }
 
 /** product: the enabled product the user entered through, carried to the session page. */
@@ -75,7 +90,8 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
     if (isSignUp) form.set("timezone", browserTimezone());
     try {
       await signIn("password", form);
-      router.push(withProduct(AFTER_AUTH_PATH, product));
+      // New accounts agree to recording once, before their first session.
+      router.push(withProduct(isSignUp ? CONSENT_PATH : AFTER_AUTH_PATH, product));
       // Keep the button disabled while navigating away.
     } catch (error) {
       const formError = toAuthFormError(error);
@@ -92,23 +108,26 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
       {formError !== undefined && (
         <div
           role="alert"
-          className="notice notice-warn"
+          className={`notice flex items-start gap-3 ${formError.code === "SERVER_ERROR" ? "" : "notice-warn"}`}
         >
-          <p>{formError.message}</p>
-          {formError.code === AUTH_ERROR.NO_ACCOUNT && (
-            <p className="mt-1">
-              <Link href={signUpPath} className="font-medium underline">
-                Create an account instead
-              </Link>
-            </p>
-          )}
-          {formError.code === AUTH_ERROR.ACCOUNT_EXISTS && (
-            <p className="mt-1">
-              <Link href={signInPath} className="font-medium underline">
-                Sign in instead
-              </Link>
-            </p>
-          )}
+          <AlertIcon size={20} />
+          <div>
+            <p>{formError.message}</p>
+            {formError.code === AUTH_ERROR.NO_ACCOUNT && (
+              <p className="mt-1">
+                <Link href={signUpPath} className="font-medium underline">
+                  Create an account instead
+                </Link>
+              </p>
+            )}
+            {formError.code === AUTH_ERROR.ACCOUNT_EXISTS && (
+              <p className="mt-1">
+                <Link href={signInPath} className="font-medium underline">
+                  Sign in instead
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -193,11 +212,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
             aria-invalid={confirmError !== null}
             aria-describedby={confirmError !== null ? "confirm-password-error" : undefined}
           />
-          {confirmError !== null && (
-            <p id="confirm-password-error" className="mt-1.5 text-sm text-danger">
-              {confirmError}
-            </p>
-          )}
+          {confirmError !== null && <ErrorLine id="confirm-password-error" message={confirmError} />}
         </div>
       )}
 
@@ -225,7 +240,7 @@ export function AuthForm({ mode, product }: { mode: Mode; product?: string }) {
           </>
         ) : (
           <>
-            New here?{" "}
+            New to {BRAND.name}?{" "}
             <Link href={signUpPath} className="font-medium">
               Create an account
             </Link>

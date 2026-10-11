@@ -12,7 +12,10 @@ export default async function SignInPage({
   const product = getProduct((await searchParams).product);
   return (
     <>
-      <h1 className="mb-6 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Sign in</h1>
+      <div className="mb-6 flex flex-col gap-1.5">
+        <h1 className="m-0 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Welcome back</h1>
+        <p className="m-0 text-muted">Sign in to pick up where you left off.</p>
+      </div>
       <AuthForm mode="signIn" product={product?.enabled ? product.slug : undefined} />
     </>
   );

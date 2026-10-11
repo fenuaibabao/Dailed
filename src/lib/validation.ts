@@ -16,27 +16,27 @@ export function emailError(email: string): string | null {
   const value = normalizeEmail(email);
   if (value.length === 0) return "Enter your email address.";
   if (value.length > 254 || !EMAIL_PATTERN.test(value)) {
-    return "Enter a valid email address, like name@example.com.";
+    return "That email doesn't look quite right. Check for a missing “.com” or similar.";
   }
   return null;
 }
 
 export function passwordError(password: string): string | null {
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return `Use at least ${PASSWORD_MIN_LENGTH} characters.`;
+    return `Your password needs at least ${PASSWORD_MIN_LENGTH} characters.`;
   }
   if (password.length > PASSWORD_MAX_LENGTH) {
-    return `Use at most ${PASSWORD_MAX_LENGTH} characters.`;
+    return `Your password can have at most ${PASSWORD_MAX_LENGTH} characters.`;
   }
   if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-    return "Include at least one letter and one number.";
+    return "Your password needs at least one letter and one number.";
   }
   return null;
 }
 
 export function nameError(name: string): string | null {
   const value = name.trim();
-  if (value.length === 0) return "Enter your name.";
+  if (value.length === 0) return "Please add your name. It's how Remi will greet you.";
   if (value.length > NAME_MAX_LENGTH) {
     return `Keep your name under ${NAME_MAX_LENGTH} characters.`;
   }

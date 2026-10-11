@@ -38,7 +38,7 @@ export function validateAuthForm(
   return errors;
 }
 
-export const PASSWORD_MISMATCH_MESSAGE = "Passwords don't match.";
+export const PASSWORD_MISMATCH_MESSAGE = "These passwords don't match yet.";
 
 // Sign-up only. The confirmation never leaves the browser; it only guards
 // against a typo in the password the server does receive.
