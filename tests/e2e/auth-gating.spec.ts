@@ -129,7 +129,7 @@ for (const [slug, name] of [
 ] as const) {
   test(`/${slug} has a landing page whose Start talking carries the product to sign-up`, async ({ page }) => {
     await page.goto(`/${slug}`);
-    await expect(page.getByText(name)).toBeVisible();
+    await expect(page.getByRole("banner").getByText(name)).toBeVisible();
     await page.getByRole("link", { name: "Start talking" }).click();
     await expect(page).toHaveURL(new RegExp(`/sign-up\\?product=${slug}$`));
     await page.getByRole("link", { name: "Sign in" }).click();
@@ -139,7 +139,7 @@ for (const [slug, name] of [
 
 test("the home page is Create, and products that aren't ready say coming soon", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Warpwork Create")).toBeVisible();
+  await expect(page.getByRole("banner").getByText("Warpwork Create")).toBeVisible();
   await expect(page.getByRole("link", { name: "Start talking" })).toHaveAttribute("href", "/sign-up?product=create");
   await page.goto("/legacy");
   await expect(page.getByTestId("coming-soon")).toBeVisible();
