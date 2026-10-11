@@ -1,55 +1,281 @@
 @import "tailwindcss";
 
+/*
+ * Warpwork style system. Values come from the key-screen designs
+ * (docs/PRIMER.md links them). The designs are light-only, apart from the
+ * dark sidebar and the dark live-session screen, which use the ink colors.
+ */
 :root {
-  --background: #fafaf9;
+  --background: #f2f1ed;
   --surface: #ffffff;
-  --foreground: #1c1917;
-  --muted: #57534e;
-  --border: #d6d3d1;
-  --accent: #c2410c;
+  --surface-2: #eceae4;
+  --foreground: #15171c;
+  --soft: #3a3d45;
+  --muted: #5b5f69;
+  --border: #e2e0da;
+  --border-strong: #cfccc4;
+  --accent: #2f4bd8;
+  --accent-hover: #1f35a8;
   --accent-foreground: #ffffff;
-  --danger: #b91c1c;
-  --danger-surface: #fef2f2;
-  --focus: #2563eb;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c0a09;
-    --surface: #1c1917;
-    --foreground: #f5f5f4;
-    --muted: #a8a29e;
-    --border: #44403c;
-    --accent: #fb923c;
-    --accent-foreground: #1c1917;
-    --danger: #fca5a5;
-    --danger-surface: #2a1414;
-    --focus: #93c5fd;
-  }
+  --accent-surface: #f3f5fe;
+  --success: #2d5a27;
+  --success-surface: #e3ebdf;
+  --danger: #a12a12;
+  --danger-border: #e5b5a6;
+  --danger-surface: #fbede7;
+  --field-error: #c2410c;
+  --ink: #15171c;
+  --ink-raised: #2a2d34;
+  --ink-line: #2e3138;
+  --ink-text: #c9cbd1;
+  --ink-muted: #a3a6ae;
+  --live: #111317;
+  --end: #d93a1c;
+  --focus: rgba(47, 75, 216, 0.35);
+  --shadow-card: 0 1px 2px rgba(21, 23, 28, 0.04), 0 6px 20px rgba(21, 23, 28, 0.05);
+  --shadow-raised: 0 1px 2px rgba(21, 23, 28, 0.04), 0 10px 30px rgba(21, 23, 28, 0.06);
+  --shadow-cta: 0 6px 18px rgba(47, 75, 216, 0.25);
+  color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
+  --color-soft: var(--soft);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-surface: var(--accent-surface);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
   --color-danger: var(--danger);
+  --color-danger-border: var(--danger-border);
   --color-danger-surface: var(--danger-surface);
+  --color-ink: var(--ink);
+  --color-ink-raised: var(--ink-raised);
+  --color-ink-line: var(--ink-line);
+  --color-ink-text: var(--ink-text);
+  --color-ink-muted: var(--ink-muted);
+  --color-live: var(--live);
+  --color-end: var(--end);
   --color-focus: var(--focus);
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-cta: var(--shadow-cta);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+/* In a layer, so Tailwind utilities on an element win over these defaults. */
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  a {
+    color: var(--accent);
+  }
+  a:hover {
+    color: var(--accent-hover);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--accent);
+  }
 }
 
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+@layer components {
+  /* Page title: big, tight, semibold. */
+  .page-title {
+    margin: 0;
+    font-weight: 600;
+    font-size: clamp(30px, 5vw, 40px);
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+
+  .section-title {
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Small mono label above a heading or card. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-raised {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-raised);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 2px 12px;
+    font-size: 14px;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--surface-2);
+    color: var(--soft);
+    border-radius: 4px;
+    padding: 1px 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--foreground);
+    font: 500 14px var(--font-sans);
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+  }
+  .btn:hover {
+    background: var(--surface-2);
+    color: var(--foreground);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-foreground);
+    box-shadow: var(--shadow-cta);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-foreground);
+  }
+  .btn-primary:disabled {
+    background: var(--border);
+    border-color: var(--border);
+    color: var(--muted);
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .btn-dark {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #ffffff;
+  }
+  .btn-dark:hover {
+    background: var(--ink-raised);
+    color: #ffffff;
+  }
+
+  .btn-danger {
+    color: var(--danger);
+    border-color: var(--danger-border);
+  }
+  .btn-danger:hover {
+    background: var(--danger-surface);
+    color: var(--danger);
+  }
+
+  .btn-sm {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+  }
+
+  .btn-lg {
+    min-height: 56px;
+    padding: 0 28px;
+    border-radius: 14px;
+    font-size: 17px;
+  }
+
+  .field {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--foreground);
+    font: 400 16px var(--font-sans);
+  }
+  textarea.field {
+    padding: 12px 14px;
+    line-height: 1.5;
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--field-error);
+  }
+  .field:disabled {
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .notice {
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    background: var(--surface-2);
+    color: var(--soft);
+  }
+  .notice-warn {
+    background: var(--danger-surface);
+    color: #8a2a12;
+  }
 }

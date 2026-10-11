@@ -40,11 +40,11 @@ function ConsentBox() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <label className="flex items-start gap-3">
+    <div className="card p-4">
+      <label className="flex cursor-pointer items-start gap-3.5">
         <input
           type="checkbox"
-          className="mt-1 h-4 w-4"
+          className="mt-0.5 h-[22px] w-[22px] shrink-0 cursor-pointer"
           disabled={saving}
           onChange={async (event) => {
             if (!event.target.checked) return;
@@ -100,19 +100,19 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
   const hasConsent = consent !== undefined && consent !== null;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:gap-10">
       <div className="space-y-8">
-        <section className="space-y-4">
+        <section className="card space-y-5 p-6">
           <div>
-            <p className="text-sm font-medium text-accent">{product.name}</p>
-            <h1 className="mt-1 text-2xl font-semibold">Talk it through with Remi</h1>
+            <p className="eyebrow">{product.name}</p>
+            <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Talk it through with Remi</h1>
           </div>
 
           {workspaces !== undefined && (
             <p className="text-sm text-muted" data-testid="session-workspace">
               Workspace: {workspace?.name ?? "Personal"}
               {workspace?.phiMode && " (health-data mode: sessions are off)"} ·{" "}
-              <Link href="/app/workspaces" className="underline">
+              <Link href="/app/workspaces">
                 Change
               </Link>
             </p>
@@ -121,7 +121,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
           {consent === null && <ConsentBox />}
 
           <div>
-            <label htmlFor="focus" className="mb-1 block text-sm font-medium">
+            <label htmlFor="focus" className="label">
               Today&apos;s focus <span className="font-normal text-muted">(optional)</span>
             </label>
             <textarea
@@ -132,7 +132,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
               onChange={(e) => setFocus(e.target.value)}
               disabled={busy}
               placeholder="A launch, a story you keep telling, something that changed…"
-              className="w-full rounded-md border border-border bg-surface px-3 py-2"
+              className="field"
             />
           </div>
 
@@ -141,8 +141,12 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
               type="button"
               disabled={!hasConsent || busy}
               onClick={() => session.begin(product.slug, focus)}
-              className="w-full rounded-md bg-accent px-4 py-2.5 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn btn-primary btn-lg w-full"
             >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+              </svg>
               Start talking
             </button>
             <p className="mt-2 text-sm text-muted">
@@ -158,7 +162,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
 
           {activeCall && (
             <div
-              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
+              className="notice flex items-center justify-between gap-3 text-[15px] text-foreground"
               aria-live="polite"
               data-testid="call-status"
             >
@@ -174,7 +178,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
                 <button
                   type="button"
                   onClick={() => session.end()}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm"
+                  className="btn btn-sm border-end bg-end text-white hover:bg-end hover:text-white hover:brightness-110"
                 >
                   End session
                 </button>
@@ -184,13 +188,13 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">Past sessions</h2>
+          <h2 className="section-title">Past sessions</h2>
           {calls === undefined ? (
             <p className="mt-2 text-muted">Loading…</p>
           ) : calls.length === 0 ? (
             <p className="mt-2 text-muted">Your sessions will show up here.</p>
           ) : (
-            <ul className="mt-2 divide-y divide-border">
+            <ul className="card mt-3 divide-y divide-border overflow-hidden">
               {calls.map((call) => (
                 <li key={call._id}>
                   <button
@@ -198,14 +202,14 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
                     onClick={() => setSelectedCallId(call._id)}
                     disabled={call.status !== "completed" || call.contentDeleted}
                     aria-current={call._id === shownCallId ? "true" : undefined}
-                    className="flex w-full items-center justify-between gap-3 py-2 text-left disabled:cursor-default aria-[current=true]:font-medium"
+                    className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-surface-2/60 disabled:cursor-default disabled:hover:bg-transparent aria-[current=true]:bg-accent-surface aria-[current=true]:font-medium"
                   >
                     <span className="min-w-0 truncate">
                       {formatWhen(call.startedAt ?? call._creationTime)} ·{" "}
                       {call.productName ?? MODE_LABEL[call.mode]}
                       {call.durationSeconds !== null && ` · ${formatDuration(call.durationSeconds)}`}
                     </span>
-                    <span className="shrink-0 text-sm text-muted">
+                    <span className="shrink-0 font-mono text-[13px] text-muted">
                       {call.contentDeleted ? "Deleted" : STATUS_LABEL[call.status]}
                     </span>
                   </button>
@@ -222,7 +226,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
         {shownCallId !== null ? (
           <SessionResults callId={shownCallId} onDeleted={() => setSelectedCallId(null)} />
         ) : (
-          <div className="rounded-lg border border-dashed border-border p-8 text-muted">
+          <div className="rounded-2xl border border-dashed border-border-strong p-8 text-muted">
             After your first session, your summary, themes and drafts appear here.
           </div>
         )}

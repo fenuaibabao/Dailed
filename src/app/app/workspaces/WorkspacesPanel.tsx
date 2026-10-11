@@ -73,8 +73,8 @@ function NameForm({
     if (await action.run(() => onSubmit(value))) setValue("");
   }
   return (
-    <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-4">
-      <label htmlFor={inputId} className="mb-1 block text-sm font-medium">
+    <form onSubmit={submit} className="card p-5">
+      <label htmlFor={inputId} className="label">
         {label}
       </label>
       <div className="flex gap-2">
@@ -84,12 +84,12 @@ function NameForm({
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
           maxLength={80}
-          className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2"
+          className="field min-w-0 flex-1"
         />
         <button
           type="submit"
           disabled={action.pending || value.trim() === ""}
-          className="shrink-0 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className="btn btn-primary min-h-12 shrink-0"
         >
           {button}
         </button>
@@ -121,14 +121,14 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
           <p className="text-sm font-medium">Invite code</p>
           <p className="text-sm text-muted">Share it with people you want in this workspace. They enter it on this page.</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <code className="rounded-md border border-border px-3 py-1.5 font-mono tracking-widest" data-testid="invite-code">
+            <code className="rounded-[10px] bg-surface-2 px-3.5 py-2 font-mono text-base tracking-widest" data-testid="invite-code">
               {org.inviteCode}
             </code>
             <button
               type="button"
               disabled={action.pending}
               onClick={() => action.run(() => resetInviteCode({ orgId }))}
-              className="rounded-md border border-border px-3 py-1.5 text-sm"
+              className="btn btn-sm"
             >
               New code
             </button>
@@ -142,10 +142,10 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
           For workspaces that would handle patient information. While it&apos;s on, sessions in this workspace stay off
           until our vendors sign health-data agreements (BAAs).
         </p>
-        <label className="mt-2 flex items-center gap-2 text-sm">
+        <label className="mt-2 flex items-center gap-2.5 text-sm">
           <input
             type="checkbox"
-            className="h-4 w-4"
+            className="h-5 w-5"
             checked={org.phiMode}
             disabled={!isOwner || action.pending}
             onChange={(e) => action.run(() => setPhiMode({ orgId, on: e.target.checked }))}
@@ -166,7 +166,7 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
           onChange={(e) =>
             action.run(() => setRetention({ orgId, days: e.target.value === "" ? null : Number(e.target.value) }))
           }
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="field"
         >
           {RETENTION_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -174,10 +174,10 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2.5 text-sm">
           <input
             type="checkbox"
-            className="h-4 w-4"
+            className="h-5 w-5"
             checked={org.redactTranscripts}
             disabled={!isOwner || org.phiMode || action.pending}
             onChange={(e) => action.run(() => setRedaction({ orgId, on: e.target.checked }))}
@@ -206,7 +206,7 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
                     value={m.role}
                     disabled={action.pending}
                     onChange={(e) => action.run(() => setRole({ orgId, userId: m.userId, role: e.target.value as Role }))}
-                    className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                    className="field min-h-9 w-auto px-2 text-sm"
                   >
                     {(["owner", "admin", "member"] as const).map((r) => (
                       <option key={r} value={r}>
@@ -222,7 +222,7 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
                     type="button"
                     disabled={action.pending}
                     onClick={() => action.run(() => removeMember({ orgId, userId: m.userId }))}
-                    className="rounded-md border border-border px-2 py-1 text-sm"
+                    className="btn btn-sm btn-danger"
                   >
                     Remove
                   </button>
@@ -238,7 +238,7 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
           type="button"
           disabled={action.pending}
           onClick={() => action.run(() => leave({ orgId }))}
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-danger"
+          className="btn btn-danger"
         >
           Leave workspace
         </button>
@@ -264,7 +264,7 @@ function OrgActivity({ orgId }: { orgId: Id<"orgs"> }) {
                 {a.subject && a.subject !== a.actor && <span className="text-muted"> · {a.subject}</span>}
                 <span className="text-muted"> · by {a.actor ?? "automatic cleanup"}</span>
               </span>
-              <span className="text-muted">{formatWhen(a.at)}</span>
+              <span className="font-mono text-[13px] text-muted">{formatWhen(a.at)}</span>
             </li>
           ))}
         </ul>
@@ -285,14 +285,14 @@ export function WorkspacesPanel() {
   return (
     <div className="max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Workspaces</h1>
-        <p className="mt-1 text-muted">
+        <h1 className="page-title">Workspaces</h1>
+        <p className="mt-3 text-base text-soft">
           Use a workspace for a team, like a company or a clinic. Your sessions stay private to you either way.
         </p>
       </div>
 
       <section>
-        <label htmlFor="active-workspace" className="mb-1 block text-sm font-medium">
+        <label htmlFor="active-workspace" className="label">
           New sessions go to
         </label>
         <select
@@ -302,7 +302,7 @@ export function WorkspacesPanel() {
           onChange={(e) =>
             switching.run(() => setActive({ orgId: e.target.value === "" ? null : (e.target.value as Id<"orgs">) }))
           }
-          className="w-full rounded-md border border-border bg-surface px-3 py-2"
+          className="field"
         >
           <option value="">Personal</option>
           {mine?.orgs.map((o) => (
@@ -316,7 +316,7 @@ export function WorkspacesPanel() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Your workspaces</h2>
+        <h2 className="section-title">Your workspaces</h2>
         {mine === undefined ? (
           <p className="text-muted">Loading…</p>
         ) : mine.orgs.length === 0 ? (
@@ -324,12 +324,12 @@ export function WorkspacesPanel() {
         ) : (
           <ul className="space-y-2">
             {mine.orgs.map((o) => (
-              <li key={o._id} className="rounded-lg border border-border bg-surface" data-testid="workspace">
+              <li key={o._id} className="card overflow-hidden" data-testid="workspace">
                 <button
                   type="button"
                   aria-expanded={openId === o._id}
                   onClick={() => setOpenId(openId === o._id ? null : o._id)}
-                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                  className="flex min-h-14 w-full items-center justify-between gap-3 p-4 text-left hover:bg-surface-2/60"
                 >
                   <span className="min-w-0 truncate font-medium">{o.name}</span>
                   <span className="shrink-0 text-sm text-muted">
