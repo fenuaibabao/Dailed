@@ -7,6 +7,9 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { CopyButton } from "./CopyButton";
 
 const DRAFT_SECTIONS = [
+  { kind: "investor_update", heading: "Investor update" },
+  { kind: "decision", heading: "Decision log" },
+  { kind: "pitch", heading: "Pitch narrative" },
   { kind: "post", heading: "Posts" },
   { kind: "script", heading: "Short-video scripts" },
   { kind: "newsletter", heading: "Newsletter" },
@@ -116,7 +119,15 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
                       </div>
                       <CopyButton text={copyText} />
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap break-words">{item.body}</p>
+                    <p className="mt-2 whitespace-pre-wrap break-words">
+                      {kind === "decision" && <span className="font-medium">Why: </span>}
+                      {item.body}
+                    </p>
+                    {item.body.includes("[check this number]") && (
+                      <p className="mt-2 text-sm text-muted">
+                        Numbers marked “check this number” weren&apos;t found in what you said. Fix them before sending.
+                      </p>
+                    )}
                     {item.sourceExcerpt && (
                       <blockquote className="mt-3 border-l-2 border-border pl-3 text-sm text-muted">
                         You said: “{item.sourceExcerpt}”

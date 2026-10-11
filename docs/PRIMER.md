@@ -42,7 +42,7 @@ Every product is planned in **MAP** format: **Market** (who it's for), **Asset**
 |---|---|---|---|
 | **Create** *(built, first)* | Creators, DJs, coaches, solo experts who need to post but hate writing | A week of posts, short-video scripts, a newsletter and an idea bank, in their own voice | "My AI interviewed me" clips; creators post the outputs, which markets us |
 | **Clarity** *(next to enable)* | Individuals who want to think out loud: life direction, decisions, journaling without writing | Session summaries, themes over time (Weaves), open threads, private insight | Personal stories and word of mouth; "talk it out" positioning |
-| **Founder** | Early-stage founders | Investor updates, pitch narrative, decision log, weekly founder reflection | Founder communities and build-in-public posts |
+| **Founder** *(live)* | Early-stage founders | Investor updates, pitch narrative, decision log, weekly founder reflection | Founder communities and build-in-public posts |
 | **Legacy** | Older adults and families preserving life stories | A memoir/story book built from long interviews (family gift) | Gift purchases by adult children; holidays and milestones |
 | **Voices** *(B2B)* | Product, research and marketing teams | AI-run customer interviews at scale, themes across interviews, quotes | Sales-led; case studies |
 | **Intake** *(healthcare B2B, later)* | Clinics and practices | Pre-visit patient intake conversations turned into structured summaries for clinicians | Sales-led; needs BAAs and compliance first (section 7) |
@@ -85,7 +85,9 @@ I don't want to break any laws. Have legal review before launch.
   - #6 Section 2: products as configuration. Create and Clarity are live products with landing pages at `/create` and `/clarity`; Founder, Legacy, Voices and Intake show "coming soon". The session page has one Start talking button.
   - #8 Section 3: Weaves. After each session its main topics are filed into Weaves (new or existing), shown on the session page. Only sessions from #8 onward are woven.
   - #9 Section 4: workspaces, roles and `phi_mode`. Workspaces at `/app/workspaces` with owner/admin/member roles and invite codes; new sessions record the chosen workspace; health-data mode blocks sessions in that workspace until every vendor has a BAA.
-- Open, OK'd to merge once green ("merge all three"): **#10, section 5 (audit log, retention, redaction, export)**. An append-only audit log; keep-forever by default or 30/90/365-day retention per person and per workspace, applied by a daily cleanup; optional transcript redaction (always on in health-data mode); a "Your data" page with a full JSON download; deleting a single session.
+  - #10 Section 5: audit log, retention, redaction, export. An append-only audit log; keep-forever by default or 30/90/365-day retention per person and per workspace, applied by a daily cleanup; optional transcript redaction (always on in health-data mode); a "Your data" page at `/app/privacy` with a full JSON download; deleting a single session.
+- Open, waiting on my OK to merge: **#11, Founder enabled**. Weekly check-in at `/founder` producing a weekly reflection, investor update, decision log, pitch narrative (when there's enough) and threads for next week; numbers the founder didn't say are flagged "[check this number]".
+- All six suite sections (0 to 5) are merged. Next items come from the "Later, ask before starting each" list in section 6.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
@@ -228,6 +230,7 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-10: `phi_mode` ("health-data mode") is per workspace and set by owners. Until Vapi, Convex, Vercel and the model provider have all signed BAAs, a health-data workspace can't run sessions at all. The list of BAA-covered vendors lives in code (`convex/lib/phi.ts`), so changing it is a reviewed change.
 - 2026-10-10: Retention defaults to keeping everything. Deleting content keeps the session's dated row (date, length, cost) as a record; consents and the audit log are never deleted. The shorter of a person's and a workspace's limit wins.
 - 2026-10-10: Redaction is pattern-based (emails and any 9+ digit run) and applied before a transcript is stored or sent to a model; with redaction on, the recording link isn't kept because the audio can't be redacted. It's a safety net, not de-identification.
+- 2026-10-10: Founder outputs: weekly reflection (summary), themes, one investor update, up to 5 decisions, a pitch narrative only when there's enough, and threads for next week. No posts or scripts. Numbers in the investor update or pitch must be ones the founder said; the model is asked once more, then leftovers are flagged "[check this number]" rather than removed.
 - 2026-10-10: Weaves are per person and per product. A session joins up to 3 weaves; an existing weave keeps its name and its summary is updated each time. Sensitive sessions only join sensitive weaves. Weaving runs after a session's drafts are saved, and a weaving failure never affects the drafts.
 
 ## 14. Open questions

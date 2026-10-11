@@ -3,7 +3,7 @@ import { internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { getLlmProvider } from "./lib/llm";
 import { processTranscript } from "./lib/processing";
-import { producesDrafts } from "../src/config/products";
+import { producesDrafts, producesFounderNotes } from "../src/config/products";
 import { memoryKind } from "./schema";
 
 export const loadJob = internalQuery({
@@ -16,6 +16,7 @@ export const loadJob = internalQuery({
     const app = await ctx.db.get(call.appId);
     return {
       drafts: app === null ? true : producesDrafts(app.outputTemplates),
+      founder: app !== null && producesFounderNotes(app.outputTemplates),
       transcript: call.transcript,
       durationSeconds: call.durationSeconds,
       sensitive: call.sensitive,
@@ -49,6 +50,10 @@ const processedValidator = v.object({
     quotesDropped: v.number(),
   }),
   noDraftsReason: v.union(v.null(), v.string()),
+  investorUpdate: v.union(v.null(), v.object({ title: v.string(), body: v.string() })),
+  decisions: v.array(v.object({ decision: v.string(), why: v.string() })),
+  pitch: v.union(v.null(), v.string()),
+  numbersFlagged: v.number(),
 });
 
 /** Writes a session's outputs and memories exactly once. */
@@ -98,6 +103,20 @@ export const saveResults = internalMutation({
         body: result.newsletter.body,
       });
     }
+    if (result.investorUpdate !== null) {
+      await ctx.db.insert("outputs", {
+        ...base,
+        kind: "investor_update",
+        title: result.investorUpdate.title,
+        body: result.investorUpdate.body,
+      });
+    }
+    for (const d of result.decisions) {
+      await ctx.db.insert("outputs", { ...base, kind: "decision", title: d.decision, body: d.why });
+    }
+    if (result.pitch !== null) {
+      await ctx.db.insert("outputs", { ...base, kind: "pitch", body: result.pitch });
+    }
     for (const idea of result.ideas) {
       await ctx.db.insert("outputs", { ...base, kind: "idea", body: idea });
     }
@@ -146,7 +165,8 @@ export const run = internalAction({
         console.log(
           `Grounding for call ${callId}: ${result.posts.length} posts, ${result.scripts.length} scripts; ` +
             `quotes kept ${g.quotesKept}, fixed ${g.quotesFixed}, dropped ${g.quotesDropped}` +
-            (result.noDraftsReason ? `; no drafts because: ${result.noDraftsReason}` : ""),
+            (result.noDraftsReason ? `; no drafts because: ${result.noDraftsReason}` : "") +
+            (result.numbersFlagged > 0 ? `; ${result.numbersFlagged} unsaid numbers flagged` : ""),
         );
       }
       await ctx.runMutation(internal.processor.saveResults, { callId, result });

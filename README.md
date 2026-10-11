@@ -75,13 +75,22 @@ updates the same rows; it never creates duplicates. It refuses to run if
 
 The suite lives in `src/config/products.ts`: each product is the same loop with
 its own name, landing headline, interview focus, max session length and output
-templates. Create and Clarity are enabled; Founder, Legacy, Voices and Intake
+templates. Create, Clarity and Founder are enabled; Legacy, Voices and Intake
 have "coming soon" landing pages. Every product has a landing page at
 `/<slug>` (the home page is Create). Its Start talking button carries
 `?product=<slug>` through sign-up and sign-in to `/app/session`, which runs
 that product. Products without post or script templates (Clarity) never get
 posts, scripts or a newsletter. To add one: add it to the config, set
 `enabled: true`, and deploy.
+
+**Founder** is a weekly check-in. Instead of posts it produces a weekly
+reflection (the summary), an investor update, a decision log (`decision`
+outputs: the decision as the title, the reasoning as the body), a pitch
+narrative when there's enough material, and threads for next week. Every
+number of two or more digits in the investor update or pitch is looked up in
+the founder's own words (`convex/lib/numbers.ts`). If one is missing, the
+model is asked once more, and any number still missing is flagged in place
+with "[check this number]".
 
 ## Workspaces, roles and health-data mode
 

@@ -270,3 +270,99 @@ describe("processor", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Founder sessions", () => {
+  const FOUNDER_TRANSCRIPT = [
+    "AI: How did the week go?",
+    "User: We closed 3 new customers and monthly revenue is now 14,500 dollars, up from 11,000 last month.",
+    "AI: Any big decisions?",
+    "User: We decided to stop the free plan because support was eating our time, and we have 9 months of runway.",
+  ].join("\n");
+
+  const FOUNDER_REPLY = {
+    session_summary: "A strong week: new customers and a pricing decision.",
+    themes: ["Revenue growth", "Pricing"],
+    posts: [],
+    scripts: [],
+    newsletter: null,
+    ideas: ["How the paid-only switch lands"],
+    memories: [{ kind: "goal", content: "Grow revenue", importance: 4 }],
+    investor_update: {
+      title: "Week update",
+      body: "Highlights: MRR is $14,500, up from $11,000. Runway is 9 months.",
+    },
+    decisions: [{ decision: "Stop the free plan", why: "Support was eating our time." }],
+    pitch: null,
+  };
+
+  async function founderCall(t: TestConvex, userId: Id<"users">) {
+    const callId = await processingCall(t, userId, { transcript: FOUNDER_TRANSCRIPT, durationSeconds: 600 });
+    await t.run(async (ctx) => {
+      const founder = await ctx.db
+        .query("apps")
+        .withIndex("by_slug", (q) => q.eq("slug", "founder"))
+        .unique();
+      await ctx.db.patch(callId, { appId: founder!._id, personaId: founder!.defaultPersonaId! });
+    });
+    return callId;
+  }
+
+  test("saves the investor update, decision log and reflection, and no posts", async () => {
+    fetchMock.mockResolvedValueOnce(openAIReply(JSON.stringify(FOUNDER_REPLY)));
+    const t = newTest();
+    const { userId } = await signedInAs(t);
+    const callId = await founderCall(t, userId);
+    await t.action(internal.processor.run, { callId });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
+    expect(body.messages[0].content).toContain("founder's weekly check-in");
+    const outputs = await t.run((ctx) => ctx.db.query("outputs").collect());
+    expect(outputs.find((o) => o.kind === "investor_update")).toMatchObject({
+      title: "Week update",
+      body: "Highlights: MRR is $14,500, up from $11,000. Runway is 9 months.",
+    });
+    expect(outputs.find((o) => o.kind === "decision")).toMatchObject({
+      title: "Stop the free plan",
+      body: "Support was eating our time.",
+    });
+    expect(outputs.some((o) => ["post", "script", "pitch"].includes(o.kind))).toBe(false);
+    expect((await t.run((ctx) => ctx.db.get(callId)))?.status).toBe("completed");
+  });
+
+  test("a number they never said is asked about once, then flagged", async () => {
+    const invented = {
+      ...FOUNDER_REPLY,
+      investor_update: { title: "Week", body: "MRR is $14,500 and we have 2,000 users." },
+      pitch: "We grew 40% this month.",
+    };
+    fetchMock.mockResolvedValue(openAIReply(JSON.stringify(invented)));
+    const t = newTest();
+    const { userId } = await signedInAs(t);
+    const callId = await founderCall(t, userId);
+    await t.action(internal.processor.run, { callId });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retry = JSON.parse(String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body));
+    expect(retry.messages[1].content).toContain("numbers the founder never said: 2,000, 40");
+    const outputs = await t.run((ctx) => ctx.db.query("outputs").collect());
+    expect(outputs.find((o) => o.kind === "investor_update")?.body).toBe(
+      "MRR is $14,500 and we have 2,000 [check this number] users.",
+    );
+    expect(outputs.find((o) => o.kind === "pitch")?.body).toBe("We grew 40% [check this number] this month.");
+  });
+
+  test("a retry that fixes the numbers is kept", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        openAIReply(JSON.stringify({ ...FOUNDER_REPLY, investor_update: { title: "W", body: "MRR hit $20,000." } })),
+      )
+      .mockResolvedValueOnce(openAIReply(JSON.stringify(FOUNDER_REPLY)));
+    const t = newTest();
+    const { userId } = await signedInAs(t);
+    const callId = await founderCall(t, userId);
+    await t.action(internal.processor.run, { callId });
+    const update = await t.run(async (ctx) => (await ctx.db.query("outputs").collect()).find((o) => o.kind === "investor_update"));
+    expect(update?.body).not.toContain("[check this number]");
+  });
+});

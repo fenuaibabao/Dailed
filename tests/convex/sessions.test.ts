@@ -65,7 +65,7 @@ describe("start", () => {
   test("refuses products that aren't enabled or don't exist", async () => {
     const t = newTest();
     const { client } = await readyUser(t);
-    await expect(client.mutation(api.calls.start, { product: "founder" })).rejects.toThrow("PRODUCT_UNAVAILABLE");
+    await expect(client.mutation(api.calls.start, { product: "legacy" })).rejects.toThrow("PRODUCT_UNAVAILABLE");
     await expect(client.mutation(api.calls.start, { product: "nope" })).rejects.toThrow("PRODUCT_UNAVAILABLE");
     expect(await t.run((ctx) => ctx.db.query("calls").collect())).toEqual([]);
   });

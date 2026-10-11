@@ -9,7 +9,16 @@ import { BRAND_NAME } from "./brand";
  * "coming soon".
  */
 
-export type OutputKind = "session_summary" | "theme" | "post" | "script" | "newsletter" | "idea";
+export type OutputKind =
+  | "session_summary"
+  | "theme"
+  | "post"
+  | "script"
+  | "newsletter"
+  | "idea"
+  | "investor_update"
+  | "decision"
+  | "pitch";
 
 export type OutputTemplate = {
   kind: OutputKind;
@@ -112,6 +121,47 @@ const clarity: ProductConfig = {
   recipient: "self",
 };
 
+const founder: ProductConfig = {
+  slug: "founder",
+  name: `${BRAND_NAME} Founder`,
+  enabled: true,
+  headline: "Talk through the week. Get your investor update.",
+  audience: "Early-stage founders who owe investors updates and want a record of their decisions",
+  interviewFocus:
+    "This is Founder, a founder's weekly check-in. Cover the week in this rough order, following their energy: what shipped or moved forward; the numbers they track (revenue, users, growth, runway), without pressing if they'd rather not share; customers and what they learned from them; decisions they made or are weighing, and why; what's blocking them or worrying them; and what help or introductions they'd ask investors for. Near the end, ask how they're doing personally this week. Never estimate or suggest numbers yourself.",
+  recordingPurpose: "to make your investor update and founder notes",
+  maxSessionSeconds: NINETY_MINUTES,
+  outputs: [
+    {
+      kind: "session_summary",
+      label: "Weekly reflection",
+      instructions: "How the week went, in 5 to 8 sentences.",
+      maxCount: 1,
+    },
+    THEMES,
+    {
+      kind: "investor_update",
+      label: "Investor update",
+      instructions: "Highlights, numbers, lowlights and asks, in their voice. Only numbers they said.",
+      maxCount: 1,
+    },
+    {
+      kind: "decision",
+      label: "Decision log",
+      instructions: "Each decision made or being weighed, with their reasoning.",
+      maxCount: 5,
+    },
+    {
+      kind: "pitch",
+      label: "Pitch narrative",
+      instructions: "Problem, solution, why now and traction, only when they talked about the company enough.",
+      maxCount: 1,
+    },
+    { kind: "idea", label: "For next week", instructions: "Open questions and threads to pick up next week.", maxCount: 10 },
+  ],
+  recipient: "self",
+};
+
 function comingSoon(slug: string, label: string, headline: string, audience: string): ProductConfig {
   return {
     slug,
@@ -130,12 +180,7 @@ function comingSoon(slug: string, label: string, headline: string, audience: str
 export const PRODUCTS = {
   create,
   clarity,
-  founder: comingSoon(
-    "founder",
-    "Founder",
-    "Talk through the week. Get your investor update.",
-    "Early-stage founders",
-  ),
+  founder,
   legacy: comingSoon(
     "legacy",
     "Legacy",
@@ -173,6 +218,11 @@ export function getProduct(slug: string | null | undefined): ProductConfig | nul
 export function enabledProductOrDefault(slug: string | null | undefined): ProductConfig {
   const product = getProduct(slug);
   return product?.enabled ? product : PRODUCTS[DEFAULT_PRODUCT];
+}
+
+/** True when the product's outputs include the Founder set (investor update, decisions, pitch). */
+export function producesFounderNotes(outputs: { kind: string }[]): boolean {
+  return outputs.some((o) => o.kind === "investor_update");
 }
 
 /** True when the product's outputs include public drafts (posts or scripts). */

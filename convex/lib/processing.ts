@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { groundQuote } from "./grounding";
+import { flagUnmatchedNumbers, unmatchedNumbers } from "./numbers";
 import type { LlmProvider } from "./llm";
 
 // ---------------------------------------------------------------------------
@@ -42,6 +43,15 @@ export const sessionResultSchema = z.object({
   ideas: z.array(z.string().trim().min(1)).default([]),
   memories: z.array(memorySchema).default([]),
   no_drafts_reason: z.string().trim().min(1).max(500).nullable().optional(),
+  // Founder only.
+  investor_update: z
+    .object({ title: z.string().trim().min(1).max(200), body: z.string().trim().min(1) })
+    .nullable()
+    .optional(),
+  decisions: z
+    .array(z.object({ decision: z.string().trim().min(1).max(300), why: z.string().trim().min(1).max(1000) }))
+    .default([]),
+  pitch: z.string().trim().min(1).nullable().optional(),
 });
 
 export type SessionResult = z.infer<typeof sessionResultSchema>;
@@ -51,7 +61,7 @@ const chunkNotesSchema = z.object({
   quotes: z.array(z.string().trim().min(1)).default([]),
 });
 
-export const LIMITS = { themes: 5, posts: 5, scripts: 2, ideas: 10, memories: 20 } as const;
+export const LIMITS = { themes: 5, posts: 5, scripts: 2, ideas: 10, memories: 20, decisions: 5 } as const;
 
 // ---------------------------------------------------------------------------
 // Transcript helpers
@@ -150,6 +160,18 @@ const SENSITIVE_NOTE =
 const PRIVATE_PRODUCT_NOTE =
   "\nThis session is for private reflection, not publishing: return empty lists for posts and scripts and null for newsletter and no_drafts_reason. This overrides the instruction to write posts and scripts.";
 
+export const FOUNDER_NOTE = `
+This is a Founder session: a founder's weekly check-in. Posts, scripts and the newsletter aren't used here: return empty lists for posts and scripts and null for newsletter and no_drafts_reason. This overrides the instruction to write posts and scripts.
+"session_summary" is their weekly reflection: how the week went for them and the company.
+Also return these keys:
+  "investor_update": { "title": string, "body": string } | null,  // a short investor update in their voice with highlights, key numbers, lowlights and asks. Use only numbers, names and results they actually said, written as digits exactly as they said them. null if they shared too little for one.
+  "decisions": [{ "decision": string, "why": string }],  // up to 5 decisions they made or are weighing, with their reasoning in their own words
+  "pitch": string | null  // a short pitch narrative (problem, solution, why now, traction) only if they talked about the company itself enough; otherwise null`;
+
+const UNMATCHED_NUMBERS_NOTE = (numbers: string[]) =>
+  `\n\nYour investor update or pitch used numbers the founder never said: ${numbers.join(", ")}. ` +
+  "Return the full JSON object again, using only numbers that appear in the founder's own words.";
+
 // ---------------------------------------------------------------------------
 // Pipeline
 // ---------------------------------------------------------------------------
@@ -201,6 +223,11 @@ export type ProcessedSession = {
   memories: SessionResult["memories"];
   grounding: GroundingStats;
   noDraftsReason: string | null;
+  investorUpdate: { title: string; body: string } | null;
+  decisions: { decision: string; why: string }[];
+  pitch: string | null;
+  /** Numbers in the investor update or pitch the person never said, flagged in the text. */
+  numbersFlagged: number;
 };
 
 /** Per-session counts of what the quote check did. */
@@ -225,6 +252,7 @@ export function finalizeResult(
   result: SessionResult,
   transcript: string,
   noDrafts: boolean,
+  founder = false,
 ): ProcessedSession {
   const speech = userSpeech(transcript);
   const posts = noDrafts ? [] : result.posts.slice(0, LIMITS.posts);
@@ -243,6 +271,14 @@ export function finalizeResult(
     return outcome.status === "dropped" ? undefined : outcome.excerpt;
   }
   const hasBoth = posts.length > 0 && scripts.length > 0;
+  let numbersFlagged = 0;
+  function checkNumbers(text: string): string {
+    const checked = flagUnmatchedNumbers(text, speech);
+    numbersFlagged += checked.flagged;
+    return checked.text;
+  }
+  const update = founder ? (result.investor_update ?? null) : null;
+  const pitch = founder ? (result.pitch ?? null) : null;
   return {
     summary: result.session_summary,
     themes: result.themes.slice(0, LIMITS.themes),
@@ -262,7 +298,18 @@ export function finalizeResult(
     memories: result.memories.slice(0, LIMITS.memories),
     grounding,
     noDraftsReason: noDrafts || hasBoth ? null : (result.no_drafts_reason ?? null),
+    investorUpdate: update === null ? null : { title: update.title, body: checkNumbers(update.body) },
+    decisions: founder ? result.decisions.slice(0, LIMITS.decisions) : [],
+    pitch: pitch === null ? null : checkNumbers(pitch),
+    numbersFlagged,
   };
+}
+
+/** Numbers the founder never said, across the investor update and pitch. */
+function founderUnmatched(result: SessionResult, transcript: string): string[] {
+  const speech = userSpeech(transcript);
+  const text = [result.investor_update?.body ?? "", result.pitch ?? ""].join("\n");
+  return unmatchedNumbers(text, speech);
 }
 
 /** Having both a post and a script beats having more of one kind. */
@@ -288,12 +335,22 @@ export async function processTranscript(
     sensitive: boolean;
     /** False for products whose outputs have no posts or scripts (e.g. Clarity). */
     drafts?: boolean;
+    /** True for Founder: investor update, decision log and pitch. */
+    founder?: boolean;
   },
 ): Promise<ProcessedSession> {
   const transcript = args.transcript.trim();
   if (transcript.length === 0) throw new ProcessingError("Empty transcript");
   const noDrafts = args.sensitive || args.drafts === false;
-  const sensitiveNote = args.sensitive ? SENSITIVE_NOTE : noDrafts ? PRIVATE_PRODUCT_NOTE : "";
+  // Sensitive sessions never get an investor update or pitch.
+  const founder = args.founder === true && !args.sensitive;
+  const sensitiveNote = args.sensitive
+    ? SENSITIVE_NOTE
+    : founder
+      ? FOUNDER_NOTE
+      : noDrafts
+        ? PRIVATE_PRODUCT_NOTE
+        : "";
 
   let finalInput: string;
   if (isLongSession(transcript, args.durationSeconds)) {
@@ -321,6 +378,27 @@ export async function processTranscript(
 
   const request = { model: args.model, system: FINAL_SYSTEM_PROMPT + sensitiveNote, user: finalInput };
   const result = await completeValidated(llm, request, sessionResultSchema);
+
+  if (founder) {
+    // Ask once more if the update or pitch uses numbers they never said;
+    // keep whichever pass has fewer. Anything left is flagged in the text.
+    const unmatched = founderUnmatched(result, transcript);
+    let best = result;
+    if (unmatched.length > 0) {
+      try {
+        const retry = await completeValidated(
+          llm,
+          { ...request, user: request.user + UNMATCHED_NUMBERS_NOTE(unmatched) },
+          sessionResultSchema,
+        );
+        if (founderUnmatched(retry, transcript).length < unmatched.length) best = retry;
+      } catch {
+        // keep the first pass
+      }
+    }
+    return finalizeResult(best, transcript, noDrafts, true);
+  }
+
   const first = finalizeResult(result, transcript, noDrafts);
   const longEnough =
     (args.durationSeconds ?? 0) >= MIN_DRAFT_SESSION_SECONDS || isLongSession(transcript, args.durationSeconds);

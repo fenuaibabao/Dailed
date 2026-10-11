@@ -25,6 +25,7 @@ import type * as lib_grounding from "../lib/grounding.js";
 import type * as lib_llm_index from "../lib/llm/index.js";
 import type * as lib_llm_openaiCompatible from "../lib/llm/openaiCompatible.js";
 import type * as lib_llm_types from "../lib/llm/types.js";
+import type * as lib_numbers from "../lib/numbers.js";
 import type * as lib_ownership from "../lib/ownership.js";
 import type * as lib_phi from "../lib/phi.js";
 import type * as lib_processing from "../lib/processing.js";
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   "lib/llm/index": typeof lib_llm_index;
   "lib/llm/openaiCompatible": typeof lib_llm_openaiCompatible;
   "lib/llm/types": typeof lib_llm_types;
+  "lib/numbers": typeof lib_numbers;
   "lib/ownership": typeof lib_ownership;
   "lib/phi": typeof lib_phi;
   "lib/processing": typeof lib_processing;
