@@ -57,6 +57,9 @@ for (const path of ["/sign-in", "/sign-up"]) {
       await toggle.click();
       await expect(input).toHaveAttribute("type", "text");
       await expect(input).toHaveValue("secret123");
+      await expect(input).toHaveAttribute("autocapitalize", "none");
+      await expect(input).toHaveAttribute("autocorrect", "off");
+      await expect(input).toHaveAttribute("spellcheck", "false");
       await expect(toggle).toHaveAccessibleName("Hide password");
       await expect(toggle.locator("[data-icon=eye-off]")).toHaveCount(1);
 
