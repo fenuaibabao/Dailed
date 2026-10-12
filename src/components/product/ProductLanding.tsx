@@ -2,8 +2,9 @@ import Link from "next/link";
 import { BRAND } from "@/config/brand";
 import { LogoMark } from "@/components/brand/Logo";
 import { LANDING, type LandingExample, type LandingStep } from "@/config/landing";
-import type { ProductConfig } from "@/config/products";
+import { ALL_PRODUCTS, productPath, type ProductConfig } from "@/config/products";
 import { SIGN_IN_PATH, SIGN_UP_PATH, withProduct } from "@/lib/routes";
+import { ProductSwitcher, type SwitcherProduct } from "./ProductSwitcher";
 
 const SECTION = "mx-auto box-border max-w-[1200px] px-4 md:px-8";
 const H2 = "m-0 text-[clamp(28px,4vw,40px)] font-semibold leading-[1.15] tracking-[-0.025em]";
@@ -144,14 +145,26 @@ function Trust({ items }: { items: LandingStep[] }) {
   );
 }
 
+function shortNameOf(product: ProductConfig): string {
+  return LANDING[product.slug]?.shortName ?? product.name.replace(`${BRAND.name} `, "");
+}
+
+/** Every product page, in config order, for the switcher and the footer. */
+const SUITE: SwitcherProduct[] = ALL_PRODUCTS.map((p) => ({
+  slug: p.slug,
+  href: productPath(p.slug),
+  shortName: shortNameOf(p),
+  enabled: p.enabled,
+}));
+
 /**
  * A product's landing page, from one template. The product chosen here
  * carries through sign-up to the session page.
  */
 export function ProductLanding({ product }: { product: ProductConfig }) {
   const copy = product.enabled ? LANDING[product.slug] : undefined;
-  const shortName = copy?.shortName ?? product.name.replace(`${BRAND.name} `, "");
-  const home = product.slug === "create" ? "/" : `/${product.slug}`;
+  const shortName = shortNameOf(product);
+  const home = productPath(product.slug);
 
   return (
     <div className="text-base leading-[1.55]">
@@ -160,6 +173,7 @@ export function ProductLanding({ product }: { product: ProductConfig }) {
           <ProductMark shortName={shortName} />
         </Link>
         <nav aria-label="Site" className="flex items-center gap-1 text-[15px]">
+          <ProductSwitcher products={SUITE} current={product.slug} />
           {copy && (
             <a href="#how" className="flex min-h-11 items-center px-2.5 text-soft no-underline hover:text-foreground">
               How it works
@@ -213,6 +227,21 @@ export function ProductLanding({ product }: { product: ProductConfig }) {
           <span className="text-foreground">
             <ProductMark shortName={shortName} size={20} />
           </span>
+          <nav aria-label="All products" className="order-last w-full">
+            <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0">
+              {SUITE.map((p) => (
+                <li key={p.slug}>
+                  <Link
+                    href={p.href}
+                    aria-current={p.slug === product.slug ? "page" : undefined}
+                    className="text-muted no-underline hover:text-foreground aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+                  >
+                    {p.shortName}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
           <span>© {new Date().getFullYear()} {BRAND.name} (working name)</span>
         </div>
       </footer>

@@ -231,6 +231,11 @@ export function getProduct(slug: string | null | undefined): ProductConfig | nul
   return ALL_PRODUCTS.find((p) => p.slug === slug) ?? null;
 }
 
+/** The product's landing page. The default product's is the home page. */
+export function productPath(slug: string): string {
+  return slug === DEFAULT_PRODUCT ? "/" : `/${slug}`;
+}
+
 /** An enabled product for this slug, or the default. Never throws. */
 export function enabledProductOrDefault(slug: string | null | undefined): ProductConfig {
   const product = getProduct(slug);
