@@ -14,6 +14,6 @@ describe("confirm password", () => {
     expect(confirmPasswordError(password, confirmation)).toBe(PASSWORD_MISMATCH_MESSAGE);
   });
   test("uses the exact wording", () => {
-    expect(PASSWORD_MISMATCH_MESSAGE).toBe("Passwords don't match.");
+    expect(PASSWORD_MISMATCH_MESSAGE).toBe("These passwords don't match yet.");
   });
 });

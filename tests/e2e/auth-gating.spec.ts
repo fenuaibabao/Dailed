@@ -3,8 +3,8 @@ import { hasNoHorizontalScroll, watchForMicAndVapi } from "./helpers";
 
 // These run against the built app without a live Convex backend.
 
-test("signed-out visits to /app pages redirect to sign-in", async ({ page }) => {
-  for (const path of ["/app", "/app/session", "/app/workspaces", "/app/privacy", "/app/anything"]) {
+test("signed-out visits to /app pages and the consent step redirect to sign-in", async ({ page }) => {
+  for (const path of ["/app", "/app/session", "/app/workspaces", "/app/privacy", "/app/anything", "/consent"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/sign-in$/);
   }
@@ -27,9 +27,9 @@ test("sign-up shows inline errors for every bad field and doesn't submit", async
   await page.getByLabel("Confirm password").fill("short");
   await page.getByRole("button", { name: "Create account" }).click();
 
-  await expect(page.getByText("Enter your name.")).toBeVisible();
-  await expect(page.getByText(/Enter a valid email address/)).toBeVisible();
-  await expect(page.getByText("Use at least 8 characters.")).toBeVisible();
+  await expect(page.getByText("Please add your name.")).toBeVisible();
+  await expect(page.getByText(/That email doesn't look quite right/)).toBeVisible();
+  await expect(page.getByText("Your password needs at least 8 characters.")).toBeVisible();
   await expect(page.getByLabel("Email")).toHaveAttribute("aria-invalid", "true");
   expect(authCalls).toEqual([]);
 });
@@ -57,6 +57,9 @@ for (const path of ["/sign-in", "/sign-up"]) {
       await toggle.click();
       await expect(input).toHaveAttribute("type", "text");
       await expect(input).toHaveValue("secret123");
+      await expect(input).toHaveAttribute("autocapitalize", "none");
+      await expect(input).toHaveAttribute("autocorrect", "off");
+      await expect(input).toHaveAttribute("spellcheck", "false");
       await expect(toggle).toHaveAccessibleName("Hide password");
       await expect(toggle.locator("[data-icon=eye-off]")).toHaveCount(1);
 
@@ -81,16 +84,16 @@ test("sign-up flags mismatched passwords on blur and keeps submit disabled until
 
   await page.getByLabel("Password", { exact: true }).fill("correct1horse");
   await confirm.fill("correct1hors");
-  await expect(page.getByText("Passwords don't match.")).toHaveCount(0);
+  await expect(page.getByText("These passwords don't match yet.")).toHaveCount(0);
   await expect(submit).toBeDisabled();
 
   await confirm.blur();
-  await expect(page.getByText("Passwords don't match.")).toBeVisible();
+  await expect(page.getByText("These passwords don't match yet.")).toBeVisible();
   await expect(confirm).toHaveAttribute("aria-invalid", "true");
   await expect(confirm).toHaveAttribute("aria-describedby", "confirm-password-error");
 
   await confirm.fill("correct1horse");
-  await expect(page.getByText("Passwords don't match.")).toHaveCount(0);
+  await expect(page.getByText("These passwords don't match yet.")).toHaveCount(0);
   await expect(submit).toBeEnabled();
 });
 

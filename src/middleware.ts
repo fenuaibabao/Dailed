@@ -7,7 +7,7 @@ import { getProduct } from "@/config/products";
 import { AFTER_AUTH_PATH, SIGN_IN_PATH, withProduct } from "@/lib/routes";
 
 const isAuthPage = createRouteMatcher(["/sign-in", "/sign-up"]);
-const isProtectedPage = createRouteMatcher(["/app", "/app/(.*)"]);
+const isProtectedPage = createRouteMatcher(["/app", "/app/(.*)", "/consent"]);
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 

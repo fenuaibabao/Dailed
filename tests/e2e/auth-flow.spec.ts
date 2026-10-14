@@ -20,13 +20,27 @@ async function signUp(page: import("@playwright/test").Page, email: string) {
   await page.getByRole("button", { name: "Create account" }).click();
 }
 
-test("sign up lands on /app/session and the session survives reloads and protected navigation", async ({ page }) => {
+/** New accounts land on the one-time consent step; agreeing goes on to the session page. */
+async function agreeToRecording(page: import("@playwright/test").Page) {
+  await expect(page).toHaveURL(/\/consent$/);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page).toHaveURL(/\/app\/session$/);
+}
+
+test("sign up asks for consent, lands on /app/session, and the session survives reloads", async ({ page }) => {
   const watch = await watchForMicAndVapi(page);
   await signUp(page, uniqueEmail());
-  await expect(page).toHaveURL(/\/app\/session$/);
+  // Consent comes first; Continue stays disabled until it's given.
+  await expect(page).toHaveURL(/\/consent$/);
+  await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
+  await agreeToRecording(page);
   await expect(page.getByRole("heading", { name: "Talk it through with Remi" })).toBeVisible();
-  // Consent comes first; Start stays disabled until it's given.
-  await expect(page.getByRole("button", { name: "Start talking" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Start talking" })).toBeEnabled();
+
+  // Once given, the consent step sends people straight on.
+  await page.goto("/consent");
+  await expect(page).toHaveURL(/\/app\/session$/);
 
   // The bug in the previous build: a full page load bounced back to sign-in.
   await page.reload();
@@ -45,7 +59,7 @@ test("sign up lands on /app/session and the session survives reloads and protect
 test("sign out, then sign back in", async ({ page }) => {
   const email = uniqueEmail();
   await signUp(page, email);
-  await expect(page).toHaveURL(/\/app\/session$/);
+  await agreeToRecording(page);
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
@@ -61,7 +75,7 @@ test("sign out, then sign back in", async ({ page }) => {
 test("duplicate sign-up says the account exists and links to sign in", async ({ page }) => {
   const email = uniqueEmail();
   await signUp(page, email);
-  await expect(page).toHaveURL(/\/app\/session$/);
+  await agreeToRecording(page);
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
 
@@ -91,15 +105,14 @@ test("double-clicking submit sends one sign-up request", async ({ page }) => {
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm password").fill(password);
   await page.getByRole("button", { name: "Create account" }).dblclick();
-  await expect(page).toHaveURL(/\/app\/session$/);
+  await expect(page).toHaveURL(/\/consent$/);
   expect(signInCalls).toHaveLength(1);
 });
 
 test("the session page never loads Vapi or asks for the mic before Start, and fits a phone", async ({ page }) => {
   const watch = await watchForMicAndVapi(page);
   await signUp(page, uniqueEmail());
-  await expect(page).toHaveURL(/\/app\/session$/);
-  await page.getByRole("checkbox").check();
+  await agreeToRecording(page);
   await expect(page.getByRole("button", { name: "Start talking" })).toBeEnabled();
   await page.waitForLoadState("networkidle");
   expect(await watch.micRequests()).toBe(0);

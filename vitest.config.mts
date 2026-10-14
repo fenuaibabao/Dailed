@@ -23,6 +23,8 @@ export default defineConfig({
           name: "unit",
           include: ["tests/unit/**/*.test.ts"],
           environment: "node",
+          // Lets tests/unit/authProxy.test.ts stub Next inside Convex Auth's proxy.
+          server: { deps: { inline: ["convex-test", "@convex-dev/auth"] } },
         },
       },
     ],

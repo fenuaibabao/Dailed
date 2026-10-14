@@ -32,7 +32,17 @@ export function PasswordInput({ className, id, ...inputProps }: Props) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative">
-      <input {...inputProps} id={id} type={visible ? "text" : "password"} className={`${className ?? ""} pr-12`} />
+      {/* Shown passwords are plain text fields, so stop phone keyboards from
+          capitalizing or correcting them. */}
+      <input
+        {...inputProps}
+        id={id}
+        type={visible ? "text" : "password"}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className={`${className ?? ""} pr-12`}
+      />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}

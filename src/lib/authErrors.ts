@@ -22,13 +22,13 @@ export type AuthFormError = {
 const MESSAGES: Record<AuthErrorCode, Omit<AuthFormError, "code">> = {
   [AUTH_ERROR.INVALID_EMAIL]: {
     field: "email",
-    message: "Enter a valid email address, like name@example.com.",
+    message: "That email doesn't look quite right. Check for a missing “.com” or similar.",
   },
   [AUTH_ERROR.WEAK_PASSWORD]: {
     field: "password",
-    message: "Use at least 8 characters, including a letter and a number.",
+    message: "Your password needs at least 8 characters, with a letter and a number.",
   },
-  [AUTH_ERROR.INVALID_NAME]: { field: "name", message: "Enter your name." },
+  [AUTH_ERROR.INVALID_NAME]: { field: "name", message: "Please add your name. It's how Remi will greet you." },
   [AUTH_ERROR.ACCOUNT_EXISTS]: {
     field: "form",
     message: "An account with this email already exists.",
@@ -39,11 +39,11 @@ const MESSAGES: Record<AuthErrorCode, Omit<AuthFormError, "code">> = {
   },
   [AUTH_ERROR.WRONG_PASSWORD]: {
     field: "password",
-    message: "That password doesn't match this account.",
+    message: "That password doesn't match this account. Passwords are case-sensitive.",
   },
   [AUTH_ERROR.TOO_MANY_ATTEMPTS]: {
     field: "form",
-    message: "Too many attempts. Wait a few minutes and try again.",
+    message: "Too many tries. For your safety we paused sign-in for a few minutes. Please try again shortly.",
   },
 };
 
@@ -55,6 +55,6 @@ export function toAuthFormError(error: unknown): AuthFormError {
   return {
     field: "form",
     code: "SERVER_ERROR",
-    message: "Something went wrong on our side. Please try again.",
+    message: "Something went wrong on our side. Please try again in a moment.",
   };
 }
