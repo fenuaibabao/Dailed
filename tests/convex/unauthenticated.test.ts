@@ -12,6 +12,7 @@ import {
   signedInAs,
   type TestConvex,
 } from "./helpers";
+import { VALID_DAILY_SETUP } from "../fixtures/dailySetup";
 
 // Public functions that don't use the signed-in user, and why.
 const PUBLIC_BY_DESIGN = new Set([
@@ -83,6 +84,8 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
   "privacy:deleteSession": async ({ t, userId }) => ({ callId: await insertCall(t, userId, { status: "completed" }) }),
   "privacy:exportMine": async () => ({}),
   "privacy:myActivity": async () => ({}),
+  "daily:mySetup": async () => ({}),
+  "daily:saveSetup": async () => VALID_DAILY_SETUP,
 };
 
 /** A workspace owned by the fixture's user. */

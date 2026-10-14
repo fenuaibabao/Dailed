@@ -4,7 +4,7 @@ import { hasNoHorizontalScroll, watchForMicAndVapi } from "./helpers";
 // These run against the built app without a live Convex backend.
 
 test("signed-out visits to /app pages and the consent step redirect to sign-in", async ({ page }) => {
-  for (const path of ["/app", "/app/session", "/app/workspaces", "/app/privacy", "/app/anything", "/consent"]) {
+  for (const path of ["/app", "/app/session", "/app/workspaces", "/app/privacy", "/app/daily", "/app/anything", "/consent"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/sign-in$/);
   }

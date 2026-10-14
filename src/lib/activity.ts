@@ -34,6 +34,8 @@ export function describeActivity(action: string, details: Details): string {
       return "Downloaded a copy of the data";
     case "session.delete":
       return "Deleted a session";
+    case "daily.setup":
+      return d.created ? "Set up Daily" : "Changed the Daily setup";
     case "retention.purge":
       return `Deleted ${d.sessions} expired ${d.sessions === 1 ? "session" : "sessions"}`;
     default:
