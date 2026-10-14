@@ -156,7 +156,8 @@ I don't want to break any laws. Have legal review before launch.
 - All six suite sections (0 to 5) are merged.
   - #12 Redesign step 1: the style system (fonts, colors, cards, buttons, dark sidebar, phone bottom tab bar) on every page.
   - #13 Redesign step 2: Create, Clarity and Founder landing pages from one template.
-- Now: the redesign (section 6, "Redesign"). Step 3, sign in, sign up and the consent step, is open as a PR and waits on my OK to merge. It also fixes a live bug: on the live site every sign-in or sign-up failure (wrong password, no account, too many tries) showed "Something went wrong on our side". Next after it merges: add `daily` to the product config (Daily-first roadmap item 2).
+  - #14 Redesign step 3: sign in, sign up and the one-time consent step. It also fixed a live bug where every sign-in or sign-up failure showed "Something went wrong on our side", and it carries the Daily-first primer update.
+- Now: Daily-first roadmap item 2. Daily is added as a "coming soon" product with the assistant's name as config, and every product page gets a Products menu. This is open as a PR and waits on my OK to merge.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - **Strategy changed on 2026-10-11 to Daily-first** (Vision, section 3). Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were already built and live before that. They stay as they are, with no new work on them until after the Daily pilot.
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
