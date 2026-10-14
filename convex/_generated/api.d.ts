@@ -18,6 +18,7 @@ import type * as auth from "../auth.js";
 import type * as calls from "../calls.js";
 import type * as consents from "../consents.js";
 import type * as crons from "../crons.js";
+import type * as daily from "../daily.js";
 import type * as http from "../http.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   calls: typeof calls;
   consents: typeof consents;
   crons: typeof crons;
+  daily: typeof daily;
   http: typeof http;
   "lib/audit": typeof lib_audit;
   "lib/auth": typeof lib_auth;
