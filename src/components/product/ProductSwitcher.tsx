@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-
-export type SwitcherProduct = { slug: string; href: string; shortName: string; enabled: boolean };
+import type { SuiteProduct } from "@/config/suite";
 
 /**
- * A "Products" menu in the landing page header, listing every product page.
+ * A "Products" menu listing every product page, in the landing page header
+ * and the signed-in phone top bar.
  * A native <details> so it works without JavaScript; the script only closes
  * it on a click outside or Escape.
  */
-export function ProductSwitcher({ products, current }: { products: SwitcherProduct[]; current: string }) {
+export function ProductSwitcher({
+  products,
+  current,
+  align = "auto",
+}: {
+  products: SuiteProduct[];
+  current?: string;
+  /** "auto" opens rightward on phones and leftward on wider screens. */
+  align?: "auto" | "right";
+}) {
   const ref = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
@@ -43,7 +52,7 @@ export function ProductSwitcher({ products, current }: { products: SwitcherProdu
       </summary>
       <nav
         aria-label="Products"
-        className="card-raised absolute left-0 z-20 sm:left-auto sm:right-0 mt-2 w-60 max-w-[calc(100vw-32px)] p-2"
+        className={`card-raised absolute z-20 mt-2 w-60 max-w-[calc(100vw-32px)] p-2 ${align === "right" ? "right-0" : "left-0 sm:left-auto sm:right-0"}`}
       >
         <ul className="m-0 list-none p-0">
           {products.map((p) => (

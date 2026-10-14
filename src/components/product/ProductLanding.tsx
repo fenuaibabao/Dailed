@@ -2,9 +2,10 @@ import Link from "next/link";
 import { BRAND } from "@/config/brand";
 import { LogoMark } from "@/components/brand/Logo";
 import { LANDING, type LandingExample, type LandingStep } from "@/config/landing";
-import { ALL_PRODUCTS, productPath, type ProductConfig } from "@/config/products";
+import { productPath, type ProductConfig } from "@/config/products";
+import { SUITE, shortNameOf } from "@/config/suite";
 import { SIGN_IN_PATH, SIGN_UP_PATH, withProduct } from "@/lib/routes";
-import { ProductSwitcher, type SwitcherProduct } from "./ProductSwitcher";
+import { ProductSwitcher } from "./ProductSwitcher";
 
 const SECTION = "mx-auto box-border max-w-[1200px] px-4 md:px-8";
 const H2 = "m-0 text-[clamp(28px,4vw,40px)] font-semibold leading-[1.15] tracking-[-0.025em]";
@@ -144,18 +145,6 @@ function Trust({ items }: { items: LandingStep[] }) {
     </section>
   );
 }
-
-function shortNameOf(product: ProductConfig): string {
-  return LANDING[product.slug]?.shortName ?? product.name.replace(`${BRAND.name} `, "");
-}
-
-/** Every product page, in config order, for the switcher and the footer. */
-const SUITE: SwitcherProduct[] = ALL_PRODUCTS.map((p) => ({
-  slug: p.slug,
-  href: productPath(p.slug),
-  shortName: shortNameOf(p),
-  enabled: p.enabled,
-}));
 
 /**
  * A product's landing page, from one template. The product chosen here
