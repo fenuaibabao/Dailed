@@ -156,7 +156,8 @@ I don't want to break any laws. Have legal review before launch.
 - All six suite sections (0 to 5) are merged.
   - #12 Redesign step 1: the style system (fonts, colors, cards, buttons, dark sidebar, phone bottom tab bar) on every page.
   - #13 Redesign step 2: Create, Clarity and Founder landing pages from one template.
-- Now: the redesign (section 6, "Redesign"). Step 3, sign in, sign up and the consent step, is open as a PR and waits on my OK to merge. It also fixes a live bug: on the live site every sign-in or sign-up failure (wrong password, no account, too many tries) showed "Something went wrong on our side". Next after it merges: add `daily` to the product config (Daily-first roadmap item 2).
+  - #14 Redesign step 3: sign in, sign up and the one-time consent step. It also fixed a live bug where every sign-in or sign-up failure showed "Something went wrong on our side", and it carries the Daily-first primer update.
+- Now: Daily-first roadmap item 2. Daily is added as a "coming soon" product with the assistant's name as config, and every product page and the signed-in app get a Products menu. This is open as a PR and waits on my OK to merge.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - **Strategy changed on 2026-10-11 to Daily-first** (Vision, section 3). Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were already built and live before that. They stay as they are, with no new work on them until after the Daily pilot.
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
@@ -343,3 +344,6 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-11: Email summaries come first; SMS waits until A2P 10DLC registration.
 - 2026-10-11: The brand will likely become a character name; `BRAND_NAME` and `ASSISTANT_NAME` stay as config.
 - 2026-10-11: Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were built before the Daily-first change. They stay live as they are, with no new work until after the pilot. The redesign keeps only the shared base (steps 1–3) and Daily's screens; Create's remaining screens (steps 4–7) are on hold.
+- 2026-10-11: `daily` is in the product config as "coming soon" at `/daily`, with a not-an-emergency-service line on its page. It's switched on once outbound calls and family setup work. The assistant's name is `ASSISTANT_NAME` in `src/config/brand.ts`; Remi's prompt, first words and the UI read it.
+- 2026-10-12: Every product landing page has a "Products" menu in the header and a list of all products in the footer, built from the product config, so new products appear on their own. Products that aren't live are marked "Soon". Clarity and Founder stay visible while on hold.
+- 2026-10-14: The signed-in app lists every product too (a Products list in the sidebar, and the Products menu in the phone top bar), because the founder is usually signed in. The links go to each product's page.

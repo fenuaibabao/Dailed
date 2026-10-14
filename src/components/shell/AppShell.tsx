@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Logo } from "@/components/brand/Logo";
+import { ProductSwitcher } from "@/components/product/ProductSwitcher";
+import type { SuiteProduct } from "@/config/suite";
 
 const ICON_PROPS = {
   width: 20,
@@ -58,9 +60,9 @@ const NAV = [
 
 /**
  * The signed-in frame: a dark sidebar on wide screens, and a bottom tab bar
- * with a slim top bar on phones.
+ * with a slim top bar on phones. Both list every product page.
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ products, children }: { products: SuiteProduct[]; children: ReactNode }) {
   const pathname = usePathname();
 
   const links = NAV.map(({ href, label, Icon }) => {
@@ -95,6 +97,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Logo />
           </Link>
           <div className="flex flex-col gap-1">{links}</div>
+          <div>
+            <h2 id="sidebar-products" className="m-0 px-3 pb-2 font-mono text-xs font-normal tracking-[0.08em] text-ink-muted uppercase">
+              Products
+            </h2>
+            <ul aria-labelledby="sidebar-products" className="m-0 flex list-none flex-col p-0">
+              {products.map((p) => (
+                <li key={p.slug}>
+                  <Link
+                    href={p.href}
+                    className="flex min-h-10 items-center justify-between gap-3 rounded-[10px] px-3 text-[15px] text-ink-text no-underline hover:bg-ink-raised/60 hover:text-white"
+                  >
+                    {p.shortName}
+                    {!p.enabled && (
+                      <span className="rounded px-2 py-px font-mono text-xs text-ink-muted ring-1 ring-ink-line">Soon</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className="mt-auto border-t border-ink-line px-2 pt-5">
             <SignOutButton className="btn btn-sm w-full border-ink-line bg-transparent text-ink-text hover:bg-ink-raised hover:text-white" />
           </div>
@@ -105,7 +127,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link href="/app/session" className="text-foreground no-underline">
           <Logo size={22} />
         </Link>
-        <SignOutButton />
+        <div className="flex items-center gap-1">
+          <ProductSwitcher products={products} align="right" />
+          <SignOutButton />
+        </div>
       </header>
 
       <nav

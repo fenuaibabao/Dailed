@@ -55,9 +55,9 @@ test("seed refuses to run without REMI_ASSISTANT_ID", async () => {
   await expect(t.mutation(internal.seed.run, {})).rejects.toThrow("REMI_ASSISTANT_ID");
 });
 
-test("Remi's prompt and first message use the brand constant", () => {
-  expect(REMI_SYSTEM_PROMPT.startsWith(`You are Remi, ${BRAND.name}'s AI interviewer.`)).toBe(true);
-  expect(REMI_FIRST_MESSAGE).toContain(`from ${BRAND.name}.`);
+test("Remi's prompt and first message use the brand and assistant name constants", () => {
+  expect(REMI_SYSTEM_PROMPT.startsWith(`You are ${BRAND.assistant}, ${BRAND.name}'s AI interviewer.`)).toBe(true);
+  expect(REMI_FIRST_MESSAGE).toContain(`this is ${BRAND.assistant}, your AI interviewer from ${BRAND.name}.`);
 });
 
 test("the default persona query never sends the system prompt to the browser", async () => {
@@ -65,6 +65,6 @@ test("the default persona query never sends the system prompt to the browser", a
   await t.mutation(internal.seed.run, {});
   const { client } = await signedInAs(t);
   const persona = await client.query(api.personas.getDefaultForApp, { slug: "create" });
-  expect(persona).toMatchObject({ name: "Remi", maxCallSeconds: 5400 });
+  expect(persona).toMatchObject({ name: BRAND.assistant, maxCallSeconds: 5400 });
   expect(persona).not.toHaveProperty("systemPrompt");
 });

@@ -1,6 +1,8 @@
 // Shared by the sign-in/sign-up forms and the Convex password provider, so the
 // browser and the server enforce exactly the same rules.
 
+import { ASSISTANT_NAME } from "../config/brand";
+
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
 export const NAME_MAX_LENGTH = 100;
@@ -36,7 +38,7 @@ export function passwordError(password: string): string | null {
 
 export function nameError(name: string): string | null {
   const value = name.trim();
-  if (value.length === 0) return "Please add your name. It's how Remi will greet you.";
+  if (value.length === 0) return `Please add your name. It's how ${ASSISTANT_NAME} will greet you.`;
   if (value.length > NAME_MAX_LENGTH) {
     return `Keep your name under ${NAME_MAX_LENGTH} characters.`;
   }

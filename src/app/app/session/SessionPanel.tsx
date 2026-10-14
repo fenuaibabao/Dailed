@@ -4,6 +4,7 @@ import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ASSISTANT_NAME } from "@/config/brand";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { CONSENT_PATH, withProduct } from "@/lib/routes";
@@ -78,7 +79,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
         <section className="card space-y-5 p-6">
           <div>
             <p className="eyebrow">{product.name}</p>
-            <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Talk it through with Remi</h1>
+            <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Talk it through with {ASSISTANT_NAME}</h1>
           </div>
 
           {workspaces !== undefined && (
@@ -121,7 +122,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
               Start talking
             </button>
             <p className="mt-2 text-sm text-muted">
-              Remi will ask how much time you have, from 10 minutes up to 90.
+              {ASSISTANT_NAME} will ask how much time you have, from 10 minutes up to 90.
             </p>
           </div>
 

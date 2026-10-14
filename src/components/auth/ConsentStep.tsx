@@ -3,6 +3,7 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { ASSISTANT_NAME } from "@/config/brand";
 import { api } from "../../../convex/_generated/api";
 import { grantRecordingConsent } from "@/app/app/session/actions";
 import { RECORDING_CONSENT_TEXT } from "@/lib/consent";
@@ -71,7 +72,7 @@ export function ConsentStep({ product }: { product: { slug: string; recordingPur
             </svg>
           }
         >
-          Remi is an AI interviewer, not a person.
+          {ASSISTANT_NAME} is an AI interviewer, not a person.
         </Point>
         <Point
           icon={

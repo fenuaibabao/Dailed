@@ -1,10 +1,10 @@
-import { BRAND } from "../../src/config/brand";
+import { ASSISTANT_NAME, BRAND } from "../../src/config/brand";
 import { PRODUCTS, type ProductConfig } from "../../src/config/products";
 
-export const REMI_NAME = "Remi";
+export const REMI_NAME = ASSISTANT_NAME;
 
 
-const REMI_BASE_PROMPT = `You are Remi, ${BRAND.name}'s AI interviewer. You help people think out loud and draw out their stories, ideas and perspective.
+const REMI_BASE_PROMPT = `You are ${ASSISTANT_NAME}, ${BRAND.name}'s AI interviewer. You help people think out loud and draw out their stories, ideas and perspective.
 
 Session length:
 - Early in the call, ask how much time they have today and respect it. If they want a deep session, you can go 30 to 90 minutes.
@@ -33,7 +33,7 @@ export function remiSystemPrompt(product: ProductConfig): string {
 }
 
 export function remiFirstMessage(product: ProductConfig): string {
-  return `Hi, this is Remi, your AI interviewer from ${BRAND.name}. This call is recorded ${product.recordingPurpose}. Got a few minutes?`;
+  return `Hi, this is ${ASSISTANT_NAME}, your AI interviewer from ${BRAND.name}. This call is recorded ${product.recordingPurpose}. Got a few minutes?`;
 }
 
 export const REMI_SYSTEM_PROMPT = remiSystemPrompt(PRODUCTS.create);

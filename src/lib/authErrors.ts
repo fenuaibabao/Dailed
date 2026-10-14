@@ -1,6 +1,8 @@
 // Error codes thrown by convex/passwordProvider.ts as ConvexError data. They
 // travel to the browser as part of the error message (through the Next.js auth
 // proxy), so the client matches on the code string.
+
+import { ASSISTANT_NAME } from "../config/brand";
 export const AUTH_ERROR = {
   INVALID_EMAIL: "DIALED_INVALID_EMAIL",
   WEAK_PASSWORD: "DIALED_WEAK_PASSWORD",
@@ -28,7 +30,7 @@ const MESSAGES: Record<AuthErrorCode, Omit<AuthFormError, "code">> = {
     field: "password",
     message: "Your password needs at least 8 characters, with a letter and a number.",
   },
-  [AUTH_ERROR.INVALID_NAME]: { field: "name", message: "Please add your name. It's how Remi will greet you." },
+  [AUTH_ERROR.INVALID_NAME]: { field: "name", message: `Please add your name. It's how ${ASSISTANT_NAME} will greet you.` },
   [AUTH_ERROR.ACCOUNT_EXISTS]: {
     field: "form",
     message: "An account with this email already exists.",
