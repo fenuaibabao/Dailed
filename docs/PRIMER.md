@@ -178,7 +178,7 @@ I don't want to break any laws. Have legal review before launch.
    - Whether family members open the summaries.
    - Whether families would pay $39/month.
    - **Success gate:** 5 of 10 would pay.
-7. **Later, only after the pilot:** Stripe billing, HIPAA/BAAs and the other suite products. Weaves, orgs/roles/`phi_mode` and the audit log/retention/redaction were already built before this change; they stay, with no new work until after the pilot.
+7. **Later, only after the pilot:** Stripe billing, HIPAA/BAAs, the other suite products, and a language practice caller (on hold: Remi phones you to practise speaking another language and coaches you; first check how well the voice and speech recognition handle each language). Weaves, orgs/roles/`phi_mode` and the audit log/retention/redaction were already built before this change; they stay, with no new work until after the pilot.
 
 **Not now:** building all six products, HIPAA/BAAs, a general assistant, ads before the pilot, raising money before proof.
 
@@ -352,3 +352,4 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-14: The Daily page explains the service before launch: how it works, an example family summary marked as an example, and the safety promises (the parent decides, Remi says it's an AI, a check-in not care, the parent knows what's shared). It says "coming soon" with no sign-up button until family setup exists.
 - 2026-10-14: Daily family setup lives at `/app/daily`, not linked from the app until launch. One parent per family for now. It stores the parent, the call window (8am to 9pm their time), topics, optional check-ins, who gets summaries (the owner always; others by email, no account needed) and an emergency contact, in `careCircles`, `careRecipients`, `circleMembers` and `checkInSchedules`. The parent's answer starts as "not asked"; changing their phone number resets it, because consent belongs to whoever answers. Saving calls no one.
 - 2026-10-14: After setup, `/app/daily` is the family dashboard: a status (waiting for the first call, calling, paused, or the parent said no), calls answered in the last 7 days, answers in a row, the latest call's summary, recent calls, and the setup with Edit and Pause. Until phone calls exist it shows empty states; the call data comes with roadmap item 4. Pausing needs no one's say; the parent's yes still applies when calls resume.
+- 2026-10-14: New idea on hold: a language practice caller, where Remi phones you to practise speaking a language. It would reuse Daily's phone calling as a new product setting. Nothing is built for it; revisit after the Daily pilot.
