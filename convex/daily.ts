@@ -166,3 +166,25 @@ export const saveSetup = mutation({
     return null;
   },
 });
+
+export const NOT_SET_UP = "NOT_SET_UP";
+
+/** Pauses or resumes the calls. Pausing never needs the parent's say; resuming still needs their yes. */
+export const setPaused = mutation({
+  args: { paused: v.boolean() },
+  handler: async (ctx, { paused }) => {
+    const userId = await requireUserId(ctx);
+    const circle = await myCircle(ctx, userId);
+    const schedule =
+      circle &&
+      (await ctx.db
+        .query("checkInSchedules")
+        .withIndex("by_circle", (q) => q.eq("circleId", circle._id))
+        .first());
+    if (!schedule) throw new ConvexError(NOT_SET_UP);
+    if (schedule.paused === paused) return null;
+    await ctx.db.patch(schedule._id, { paused });
+    await audit(ctx, { action: "daily.pause", actorId: userId, userId, details: { paused } });
+    return null;
+  },
+});

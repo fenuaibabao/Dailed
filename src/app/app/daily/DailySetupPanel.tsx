@@ -6,15 +6,14 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { ASSISTANT_NAME } from "@/config/brand";
 import { PRODUCTS } from "@/config/products";
+import { DailyDashboard, timezoneLabel, type SavedSetup as Saved } from "./DailyDashboard";
 import {
   CALL_TIMES,
   CHECK_ITEMS,
   CHECK_ITEM_LABEL,
-  CHECK_ITEM_SHORT,
   COMMON_TIMEZONES,
   DAY_LABELS,
   EXTRA_RECIPIENTS_MAX,
-  describeDays,
   formatPhone,
   formatTime,
   splitTopics,
@@ -23,8 +22,6 @@ import {
   type DailySetupField,
   type FamilyMember,
 } from "@/lib/dailySetup";
-
-type Saved = NonNullable<ReturnType<typeof useSavedSetup>>;
 
 function useSavedSetup() {
   return useQuery(api.daily.mySetup, {});
@@ -75,9 +72,6 @@ function formFromSaved(saved: Saved): FormState {
   };
 }
 
-function timezoneLabel(value: string): string {
-  return COMMON_TIMEZONES.find((tz) => tz.value === value)?.label ?? value.replace(/_/g, " ");
-}
 
 function FieldError({ id, error }: { id: string; error?: string }) {
   if (!error) return null;
@@ -519,59 +513,6 @@ const FIELD_IDS: Record<DailySetupField, string> = {
   emergencyPhone: "emergency-phone",
 };
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 border-t border-border py-3.5 first:border-t-0 sm:flex-row sm:gap-6">
-      <dt className="w-48 shrink-0 text-[15px] text-muted">{label}</dt>
-      <dd className="m-0 text-[17px]">{children}</dd>
-    </div>
-  );
-}
-
-const CONSENT_TEXT: Record<Saved["callConsent"], string> = {
-  not_asked: "Not asked yet. Asked on the first call.",
-  granted: "Said yes to the calls.",
-  declined: `Said no. ${ASSISTANT_NAME} won't call.`,
-  revoked: `Asked ${ASSISTANT_NAME} to stop calling.`,
-};
-
-function SetupSummary({ saved, onEdit }: { saved: Saved; onEdit: () => void }) {
-  const list = (items: string[]) => (items.length > 0 ? items.join(", ") : "Nothing yet");
-  return (
-    <div className="flex flex-col gap-5">
-      <section className="card p-6" aria-labelledby="summary-h">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="summary-h" className="section-title m-0">
-            Your setup
-          </h2>
-          <button type="button" className="btn min-h-12 text-[15px]" onClick={onEdit}>
-            Edit setup
-          </button>
-        </div>
-        <dl className="mt-3 mb-0">
-          <Row label="Phone">{formatPhone(saved.parentPhone)}</Row>
-          <Row label="When">
-            {describeDays(saved.days)}, between {formatTime(saved.windowStart)} and {formatTime(saved.windowEnd)} (
-            {timezoneLabel(saved.timezone)} time)
-          </Row>
-          <Row label="Talk about">{list(saved.talkAbout)}</Row>
-          <Row label="Stay away from">{list(saved.avoid)}</Row>
-          <Row label="Check-ins">
-            {saved.checkItems.length > 0 ? saved.checkItems.map((c) => CHECK_ITEM_SHORT[c]).join(", ") : "None"}
-          </Row>
-          <Row label="Summary goes to">
-            {["You", ...saved.familyMembers.map((m) => `${m.name} (${m.email})`)].join(", ")}
-          </Row>
-          <Row label="Emergency contact">
-            {saved.emergencyName}, {formatPhone(saved.emergencyPhone)}
-          </Row>
-          <Row label={`${saved.parentName}'s answer`}>{CONSENT_TEXT[saved.callConsent]}</Row>
-        </dl>
-      </section>
-    </div>
-  );
-}
-
 export function DailySetupPanel() {
   const saved = useSavedSetup();
   const viewer = useQuery(api.users.viewer, {});
@@ -607,8 +548,10 @@ export function DailySetupPanel() {
       {loading ? (
         <p className="text-muted">Loading…</p>
       ) : saved && !editing ? (
-        <SetupSummary
+        <DailyDashboard
           saved={saved}
+          // Calls arrive once phone calls are built (roadmap item 4).
+          calls={[]}
           onEdit={() => {
             setJustSaved(false);
             setEditing(true);

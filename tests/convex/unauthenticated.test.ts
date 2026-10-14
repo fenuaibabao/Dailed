@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { makeFunctionReference } from "convex/server";
+import { api } from "../../convex/_generated/api";
 import type { DefaultFunctionArgs } from "convex/server";
 import type { Id } from "../../convex/_generated/dataModel";
 import { RECORDING_CONSENT_TEXT } from "../../src/lib/consent";
@@ -86,6 +87,10 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
   "privacy:myActivity": async () => ({}),
   "daily:mySetup": async () => ({}),
   "daily:saveSetup": async () => VALID_DAILY_SETUP,
+  "daily:setPaused": async ({ t, userId }) => {
+    await t.withIdentity({ subject: `${userId}|test-session` }).mutation(api.daily.saveSetup, VALID_DAILY_SETUP);
+    return { paused: true };
+  },
 };
 
 /** A workspace owned by the fixture's user. */

@@ -56,6 +56,7 @@ export const auditAction = v.union(
   v.literal("session.delete"),
   v.literal("retention.purge"),
   v.literal("daily.setup"),
+  v.literal("daily.pause"),
 );
 
 export const checkItem = v.union(v.literal("meds"), v.literal("sleep"), v.literal("meals"));

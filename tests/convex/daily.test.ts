@@ -121,4 +121,24 @@ describe("Daily family setup", () => {
     const exported = await client.mutation(api.privacy.exportMine, {});
     expect(exported.daily).toMatchObject({ parentName: "Mom", parentPhone: "+15551234567" });
   });
+
+  test("calls can be paused and resumed, and that's logged", async () => {
+    const t = newTest();
+    const { client } = await signedInAs(t);
+    await expect(client.mutation(api.daily.setPaused, { paused: true })).rejects.toThrow("NOT_SET_UP");
+
+    await client.mutation(api.daily.saveSetup, VALID_DAILY_SETUP);
+    await client.mutation(api.daily.setPaused, { paused: true });
+    expect((await client.query(api.daily.mySetup, {}))?.paused).toBe(true);
+
+    // Editing the setup keeps it paused.
+    await client.mutation(api.daily.saveSetup, VALID_DAILY_SETUP);
+    expect((await client.query(api.daily.mySetup, {}))?.paused).toBe(true);
+
+    await client.mutation(api.daily.setPaused, { paused: true }); // no change, no log entry
+    await client.mutation(api.daily.setPaused, { paused: false });
+    expect((await client.query(api.daily.mySetup, {}))?.paused).toBe(false);
+    const log = await t.run((ctx) => ctx.db.query("auditLog").collect());
+    expect(log.filter((e) => e.action === "daily.pause").map((e) => e.details)).toEqual([{ paused: true }, { paused: false }]);
+  });
 });
