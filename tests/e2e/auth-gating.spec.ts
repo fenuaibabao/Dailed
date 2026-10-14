@@ -173,12 +173,18 @@ test("the Products menu and footer move between every product page", async ({ pa
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("/daily is listed as coming soon and says it isn't an emergency service", async ({ page }) => {
+test("/daily explains the service, is coming soon and says it isn't an emergency service", async ({ page }) => {
   await page.goto("/daily");
   await expect(page.getByRole("banner").getByText("Warpwork Daily")).toBeVisible();
-  await expect(page.getByTestId("coming-soon")).toBeVisible();
+  await expect(page.getByTestId("coming-soon")).toContainText("small group of families");
   await expect(page.getByTestId("product-disclaimer")).toContainText("not a medical or emergency service");
   await expect(page.getByRole("link", { name: "Start talking" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+
+  await expect(page.getByRole("heading", { name: "Three steps. Your parent just answers the phone." })).toBeVisible();
+  await expect(page.getByText("Only your parent can say yes.")).toBeVisible();
+  await expect(page.getByText("An example, not a real call")).toBeVisible();
+  await expect(page.getByText("call 911, then lets you know")).toBeVisible();
 });
 
 test("signed-out visitors to a product's session page keep the product through sign-in", async ({ page }) => {
@@ -186,7 +192,7 @@ test("signed-out visitors to a product's session page keep the product through s
   await expect(page).toHaveURL(/\/sign-in\?product=clarity$/);
 });
 
-for (const path of ["/", "/clarity", "/sign-in", "/sign-up"]) {
+for (const path of ["/", "/clarity", "/daily", "/sign-in", "/sign-up"]) {
   test(`${path} never loads Vapi or asks for the microphone, and fits the viewport`, async ({ page }) => {
     const watch = await watchForMicAndVapi(page);
     await page.goto(path);

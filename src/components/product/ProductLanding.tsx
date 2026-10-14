@@ -55,12 +55,12 @@ function ProductMark({ shortName, size = 26 }: { shortName: string | null; size?
   );
 }
 
-function Steps({ steps }: { steps: LandingStep[] }) {
+function Steps({ steps, heading }: { steps: LandingStep[]; heading?: string }) {
   return (
     <section id="how" aria-labelledby="how-h" className={`${SECTION} flex flex-col gap-6 pb-[clamp(56px,8vw,96px)]`}>
       <p className="eyebrow">How it works</p>
       <h2 id="how-h" className={H2}>
-        Three steps. You only do the talking.
+        {heading ?? "Three steps. You only do the talking."}
       </h2>
       <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-4 p-0">
         {steps.map((step, i) => (
@@ -89,7 +89,7 @@ function Example({ example }: { example: LandingExample }) {
       </h2>
       <div className="flex flex-wrap items-stretch gap-5">
         <figure className="m-0 flex min-w-0 flex-[1_1_320px] flex-col gap-3.5 rounded-[18px] bg-ink p-7 text-surface-2">
-          <figcaption className="eyebrow text-ink-muted">You said</figcaption>
+          <figcaption className="eyebrow text-ink-muted">{example.saidLabel ?? "You said"}</figcaption>
           <blockquote className="m-0 text-[clamp(22px,3vw,28px)] font-medium leading-[1.35] text-white">
             {example.said}
           </blockquote>
@@ -97,7 +97,7 @@ function Example({ example }: { example: LandingExample }) {
         <div className="card flex min-w-0 flex-[1.4_1_380px] flex-col gap-3.5 rounded-[18px] p-7">
           <div className="flex flex-wrap justify-between gap-3 text-[13px]">
             <span className="tag">{example.outputLabel}</span>
-            <span className="text-muted">Built only from what you said</span>
+            <span className="text-muted">{example.outputNote ?? "Built only from what you said"}</span>
           </div>
           {example.outputTitle && <h3 className="m-0 text-[21px] font-semibold">{example.outputTitle}</h3>}
           {typeof example.output === "string" ? (
@@ -151,7 +151,8 @@ function Trust({ items }: { items: LandingStep[] }) {
  * carries through sign-up to the session page.
  */
 export function ProductLanding({ product }: { product: ProductConfig }) {
-  const copy = product.enabled ? LANDING[product.slug] : undefined;
+  // Daily has copy before launch; other coming-soon products show only a headline.
+  const copy = LANDING[product.slug];
   const shortName = shortNameOf(product);
   const home = productPath(product.slug);
 
@@ -196,7 +197,7 @@ export function ProductLanding({ product }: { product: ProductConfig }) {
             </div>
           ) : (
             <p className="notice self-start text-base" data-testid="coming-soon">
-              Coming soon.
+              {copy?.comingSoon ?? "Coming soon."}
             </p>
           )}
           {product.disclaimer && (
@@ -206,7 +207,7 @@ export function ProductLanding({ product }: { product: ProductConfig }) {
           )}
         </section>
 
-        {copy && <Steps steps={copy.steps} />}
+        {copy && <Steps steps={copy.steps} heading={copy.stepsHeading} />}
         {copy?.example && <Example example={copy.example} />}
         {copy && <Trust items={copy.trust} />}
       </main>

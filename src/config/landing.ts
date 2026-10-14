@@ -1,7 +1,7 @@
 import { ASSISTANT_NAME, BRAND_NAME } from "./brand";
 
 /**
- * Landing page copy, one entry per live product. Every product uses the same
+ * Landing page copy, one entry per live product, plus Daily ahead of launch. Every product uses the same
  * page template (src/components/product/ProductLanding.tsx). Kept apart from
  * products.ts so marketing copy never ships to the Convex backend.
  *
@@ -15,8 +15,12 @@ export type LandingExample = {
   heading: string;
   /** A line the person might say. */
   said: string;
+  /** Who said it, above the quote. Defaults to "You said". */
+  saidLabel?: string;
   /** What kind of output the card shows, e.g. "Instagram post". */
   outputLabel: string;
+  /** The small note beside the label. Defaults to "Built only from what you said". */
+  outputNote?: string;
   outputTitle?: string;
   /** Plain paragraphs, or labelled sections for structured outputs. */
   output: string | { label: string; body: string }[];
@@ -28,6 +32,10 @@ export type LandingCopy = {
   eyebrow: string;
   title: string;
   intro: string;
+  /** Shown instead of the sign-up button while the product isn't live. */
+  comingSoon?: string;
+  /** The "How it works" heading. Defaults to "Three steps. You only do the talking." */
+  stepsHeading?: string;
   steps: [LandingStep, LandingStep, LandingStep];
   example?: LandingExample;
   trust: LandingStep[];
@@ -69,6 +77,60 @@ export const LANDING: Record<string, LandingCopy> = {
       {
         title: "Nothing is posted for you",
         body: `${BRAND_NAME} never posts on your accounts. You choose what to use and where.`,
+      },
+    ],
+  },
+  daily: {
+    shortName: "Daily",
+    eyebrow: "For families with aging parents",
+    title: "A friendly phone call for your mom or dad, every day.",
+    intro:
+      `${ASSISTANT_NAME}, an AI, calls your parent at a time you choose for a short, warm chat about their day. Afterwards you get a short summary, so you know how they're doing on the days you can't call.`,
+    comingSoon: "Coming soon. We're starting with a small group of families.",
+    stepsHeading: "Three steps. Your parent just answers the phone.",
+    steps: [
+      {
+        title: "Set it up",
+        body: "Add your parent's name, phone number and the best time to call, plus what they love to talk about.",
+      },
+      {
+        title: `${ASSISTANT_NAME} calls`,
+        body: `On the first call, ${ASSISTANT_NAME} says it's an AI and asks your parent if it can keep calling. Only your parent can say yes.`,
+      },
+      {
+        title: "You hear how it went",
+        body: `After each call you get a short summary: how they sounded, what they talked about, and anything they asked ${ASSISTANT_NAME} to pass on.`,
+      },
+    ],
+    example: {
+      heading: "What your parent says, and what you get",
+      saidLabel: "Your mom said",
+      said: "“The tomatoes finally came in. I gave a whole bag to Linda next door.”",
+      outputLabel: "Family summary",
+      outputNote: "An example, not a real call",
+      output: [
+        { label: "The call", body: "Answered at 9:10am and talked for 6 minutes. She sounded cheerful." },
+        { label: "Highlights", body: "Picked her first tomatoes and shared them with her neighbor Linda." },
+        { label: "She said", body: "She slept well and took her morning pills." },
+        { label: "Passing on", body: "She wants to know if you're still coming on Sunday." },
+      ],
+    },
+    trust: [
+      {
+        title: "Your parent decides",
+        body: `Calls only continue after your parent says yes on the first call. They can tell ${ASSISTANT_NAME} to stop at any time, and you'll be told.`,
+      },
+      {
+        title: `${ASSISTANT_NAME} is an AI`,
+        body: `${ASSISTANT_NAME} never pretends to be a person. It says it's an AI and that calls are recorded.`,
+      },
+      {
+        title: "A check-in, not care",
+        body: `${ASSISTANT_NAME} never gives medical advice. If something sounds like an emergency, it tells your parent to hang up and call 911, then lets you know.`,
+      },
+      {
+        title: "Your parent knows what you'll see",
+        body: `${ASSISTANT_NAME} tells your parent what goes in your summary. If they ask to keep something private, it stays private, unless it's about their safety.`,
       },
     ],
   },
