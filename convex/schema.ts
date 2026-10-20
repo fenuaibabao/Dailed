@@ -55,6 +55,19 @@ export const auditAction = v.union(
   v.literal("data.export"),
   v.literal("session.delete"),
   v.literal("retention.purge"),
+  v.literal("daily.setup"),
+  v.literal("daily.pause"),
+);
+
+export const checkItem = v.union(v.literal("meds"), v.literal("sleep"), v.literal("meals"));
+
+// Whether the parent has agreed to Daily calls. Only the parent can say yes,
+// on the first call; the adult child can't consent for them.
+export const callConsent = v.union(
+  v.literal("not_asked"),
+  v.literal("granted"),
+  v.literal("declined"),
+  v.literal("revoked"),
 );
 
 export const llmProvider = v.union(
@@ -286,6 +299,51 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_user", ["userId"])
     .index("by_org_user", ["orgId", "userId"]),
+
+  // Daily: a family group around one parent. The adult child who set it up
+  // owns it. One circle per owner for now.
+  careCircles: defineTable({
+    ownerId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_owner", ["ownerId"]),
+
+  // The parent Daily calls. Phone numbers are E.164.
+  careRecipients: defineTable({
+    circleId: v.id("careCircles"),
+    name: v.string(), // what Remi calls them, e.g. "Mom" or "Margaret"
+    phoneE164: v.string(),
+    timezone: v.string(), // IANA name
+    callConsent,
+    talkAbout: v.array(v.string()),
+    avoid: v.array(v.string()),
+    checkItems: v.array(checkItem), // asked naturally, recorded as self-reported
+    emergencyContact: v.object({ name: v.string(), phoneE164: v.string() }),
+    updatedAt: v.number(),
+  }).index("by_circle", ["circleId"]),
+
+  // Who gets the summary after each call and the alerts. The owner always
+  // does; other family members are added by email and need no account.
+  circleMembers: defineTable({
+    circleId: v.id("careCircles"),
+    userId: v.optional(v.id("users")),
+    name: v.string(),
+    email: v.string(),
+    role: v.union(v.literal("owner"), v.literal("member")),
+    getsSummaries: v.boolean(),
+    getsAlerts: v.boolean(),
+  }).index("by_circle", ["circleId"]),
+
+  // When to call: a window in the parent's own timezone, within 8am to 9pm.
+  checkInSchedules: defineTable({
+    circleId: v.id("careCircles"),
+    recipientId: v.id("careRecipients"),
+    daysOfWeek: v.array(v.number()), // 0 = Sunday
+    windowStart: v.string(), // "HH:mm"
+    windowEnd: v.string(), // "HH:mm"
+    paused: v.boolean(),
+  })
+    .index("by_circle", ["circleId"])
+    .index("by_recipient", ["recipientId"]),
 
   // Append-only record of who did what. Never holds session content.
   // Nothing updates or deletes these rows.

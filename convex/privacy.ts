@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { loadSetup } from "./daily";
 import { audit } from "./lib/audit";
 import { requireUserId } from "./lib/auth";
 import { getOwnedCall } from "./lib/ownership";
@@ -133,6 +134,8 @@ export const exportMine = mutation({
       if (org !== null) workspaces.push({ id: org._id, name: org.name, role: m.role });
     }
 
+    const daily = await loadSetup(ctx, userId);
+
     await audit(ctx, {
       action: "data.export",
       actorId: userId,
@@ -158,6 +161,7 @@ export const exportMine = mutation({
       sessions,
       memories,
       weaves,
+      daily,
     };
   },
 });

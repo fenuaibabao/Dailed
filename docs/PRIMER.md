@@ -158,7 +158,8 @@ I don't want to break any laws. Have legal review before launch.
   - #13 Redesign step 2: Create, Clarity and Founder landing pages from one template.
   - #14 Redesign step 3: sign in, sign up and the one-time consent step. It also fixed a live bug where every sign-in or sign-up failure showed "Something went wrong on our side", and it carries the Daily-first primer update.
   - #15 Section 2 for Daily: Daily as a "coming soon" product at `/daily`, the assistant's name as config (`ASSISTANT_NAME`), and a Products menu on every product page and in the signed-in app.
-- Now: Daily-first roadmap item 3, the design pass for Daily's screens, one PR each: the Daily page, then family setup, then the family dashboard. The Daily page is open as a PR and waits on my OK to merge.
+  - #16 Daily design pass 1: the Daily page explains the service (how it works, an example summary, the safety promises), still "coming soon".
+- Now: Daily-first roadmap item 3, the rest of the design pass: family setup and the family dashboard at `/app/daily`, in one PR. It's open and waits on my OK to merge. Nothing calls anyone until phone calls are built.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - **Strategy changed on 2026-10-11 to Daily-first** (Vision, section 3). Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were already built and live before that. They stay as they are, with no new work on them until after the Daily pilot.
 - Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
@@ -177,7 +178,7 @@ I don't want to break any laws. Have legal review before launch.
    - Whether family members open the summaries.
    - Whether families would pay $39/month.
    - **Success gate:** 5 of 10 would pay.
-7. **Later, only after the pilot:** Stripe billing, HIPAA/BAAs and the other suite products. Weaves, orgs/roles/`phi_mode` and the audit log/retention/redaction were already built before this change; they stay, with no new work until after the pilot.
+7. **Later, only after the pilot:** Stripe billing, HIPAA/BAAs, the other suite products, and a language practice caller (on hold: Remi phones you to practise speaking another language and coaches you; first check how well the voice and speech recognition handle each language). Weaves, orgs/roles/`phi_mode` and the audit log/retention/redaction were already built before this change; they stay, with no new work until after the pilot.
 
 **Not now:** building all six products, HIPAA/BAAs, a general assistant, ads before the pilot, raising money before proof.
 
@@ -349,3 +350,6 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-12: Every product landing page has a "Products" menu in the header and a list of all products in the footer, built from the product config, so new products appear on their own. Products that aren't live are marked "Soon". Clarity and Founder stay visible while on hold.
 - 2026-10-14: The signed-in app lists every product too (a Products list in the sidebar, and the Products menu in the phone top bar), because the founder is usually signed in. The links go to each product's page.
 - 2026-10-14: The Daily page explains the service before launch: how it works, an example family summary marked as an example, and the safety promises (the parent decides, Remi says it's an AI, a check-in not care, the parent knows what's shared). It says "coming soon" with no sign-up button until family setup exists.
+- 2026-10-14: Daily family setup lives at `/app/daily`, not linked from the app until launch. One parent per family for now. It stores the parent, the call window (8am to 9pm their time), topics, optional check-ins, who gets summaries (the owner always; others by email, no account needed) and an emergency contact, in `careCircles`, `careRecipients`, `circleMembers` and `checkInSchedules`. The parent's answer starts as "not asked"; changing their phone number resets it, because consent belongs to whoever answers. Saving calls no one.
+- 2026-10-14: After setup, `/app/daily` is the family dashboard: a status (waiting for the first call, calling, paused, or the parent said no), calls answered in the last 7 days, answers in a row, the latest call's summary, recent calls, and the setup with Edit and Pause. Until phone calls exist it shows empty states; the call data comes with roadmap item 4. Pausing needs no one's say; the parent's yes still applies when calls resume.
+- 2026-10-14: New idea on hold: a language practice caller, where Remi phones you to practise speaking a language. It would reuse Daily's phone calling as a new product setting. Nothing is built for it; revisit after the Daily pilot.
