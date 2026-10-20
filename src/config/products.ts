@@ -46,6 +46,12 @@ export type ProductConfig = {
   recipient: "self" | "org";
   /** A plain safety line every page of this product shows, e.g. "not an emergency service". */
   disclaimer?: string;
+  /**
+   * Seeded with an app row and persona before launch, for work that runs
+   * server side (Daily's scheduled calls), while its page still says
+   * "coming soon" and browser sessions stay refused.
+   */
+  seededBeforeLaunch?: boolean;
 };
 
 const SUMMARY: OutputTemplate = {
@@ -180,8 +186,8 @@ function comingSoon(slug: string, label: string, headline: string, audience: str
 }
 
 // The lead product (docs/PRIMER.md, "Daily MVP"): check-in phone calls for
-// aging parents, set up by an adult child. Listed now so /daily exists; it's
-// enabled once outbound calls and family setup are built.
+// aging parents, set up by an adult child. Its page says "coming soon" until
+// the pilot; it's seeded so scheduled test calls can run.
 const daily: ProductConfig = {
   ...comingSoon(
     "daily",
@@ -189,6 +195,9 @@ const daily: ProductConfig = {
     "A friendly check-in call for your mom or dad, every day.",
     "For families with aging parents",
   ),
+  seededBeforeLaunch: true,
+  maxSessionSeconds: 20 * 60,
+  outputs: [],
   disclaimer:
     "Daily is a friendly check-in call, not a medical or emergency service. In an emergency, call 911.",
 };
@@ -225,6 +234,8 @@ export const DEFAULT_PRODUCT: ProductSlug = "create";
 
 export const ALL_PRODUCTS: ProductConfig[] = Object.values(PRODUCTS);
 export const ENABLED_PRODUCTS: ProductConfig[] = ALL_PRODUCTS.filter((p) => p.enabled);
+/** Products that get an app row and persona from the seed. */
+export const SEEDED_PRODUCTS: ProductConfig[] = ALL_PRODUCTS.filter((p) => p.enabled || p.seededBeforeLaunch === true);
 
 export function getProduct(slug: string | null | undefined): ProductConfig | null {
   if (!slug) return null;

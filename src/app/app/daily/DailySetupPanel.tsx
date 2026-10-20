@@ -516,6 +516,8 @@ const FIELD_IDS: Record<DailySetupField, string> = {
 export function DailySetupPanel() {
   const saved = useSavedSetup();
   const viewer = useQuery(api.users.viewer, {});
+  const calls = useQuery(api.daily.myCalls, saved ? {} : "skip");
+  const alerts = useQuery(api.daily.myAlerts, saved ? {} : "skip");
   const [editing, setEditing] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
@@ -534,8 +536,8 @@ export function DailySetupPanel() {
       </div>
 
       <p className="notice text-[15px]" data-testid="not-calling-yet">
-        {ASSISTANT_NAME} isn&apos;t calling anyone yet. Daily is still being built, so nothing happens until it launches
-        and your parent says yes on the first call.
+        Daily is in testing: {ASSISTANT_NAME} only calls numbers on our test list until it launches. On the first call,
+        your parent decides whether the calls go on.
       </p>
       <p className="m-0 text-sm text-muted">{PRODUCTS.daily.disclaimer}</p>
 
@@ -550,8 +552,8 @@ export function DailySetupPanel() {
       ) : saved && !editing ? (
         <DailyDashboard
           saved={saved}
-          // Calls arrive once phone calls are built (roadmap item 4).
-          calls={[]}
+          calls={calls ?? []}
+          alerts={alerts ?? []}
           onEdit={() => {
             setJustSaved(false);
             setEditing(true);

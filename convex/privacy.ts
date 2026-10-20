@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { loadSetup } from "./daily";
+import { loadDailyHistory, loadSetup } from "./daily";
 import { audit } from "./lib/audit";
 import { requireUserId } from "./lib/auth";
 import { getOwnedCall } from "./lib/ownership";
@@ -89,8 +89,10 @@ export const exportMine = mutation({
         startedAt: call.startedAt ? new Date(call.startedAt).toISOString() : null,
         durationSeconds: call.durationSeconds ?? null,
         focus: call.focus ?? null,
-        transcript: call.transcript ?? null,
-        recordingUrl: call.recordingUrl ?? null,
+        // A Daily call's transcript and recording are the parent's words. The
+        // family gets the summary (under "daily"), not what was said.
+        transcript: call.recipientId !== undefined ? null : (call.transcript ?? null),
+        recordingUrl: call.recipientId !== undefined ? null : (call.recordingUrl ?? null),
         contentDeletedAt: call.purgedAt ? new Date(call.purgedAt).toISOString() : null,
         outputs: outputs.map((o) => ({
           kind: o.kind,
@@ -105,6 +107,8 @@ export const exportMine = mutation({
     const memories = [];
     const weaves = [];
     for (const appId of appNames.keys()) {
+      // What Remi remembers from Daily calls is about the parent; it isn't exported.
+      if ((await ctx.db.get(appId))?.slug === "daily") continue;
       for (const sensitive of [false, true]) {
         const rows = await ctx.db
           .query("memories")
@@ -135,6 +139,7 @@ export const exportMine = mutation({
     }
 
     const daily = await loadSetup(ctx, userId);
+    const dailyHistory = await loadDailyHistory(ctx, userId);
 
     await audit(ctx, {
       action: "data.export",
@@ -162,6 +167,7 @@ export const exportMine = mutation({
       memories,
       weaves,
       daily,
+      dailyHistory,
     };
   },
 });

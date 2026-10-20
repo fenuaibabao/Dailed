@@ -202,6 +202,8 @@ export const listMine = query({
       .query("calls")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
+      // Daily's calls to a parent are the parent's words, not this person's sessions.
+      .filter((q) => q.eq(q.field("recipientId"), undefined))
       .take(25);
     const appNames = new Map<string, string>();
     for (const appId of new Set(calls.map((c) => c.appId))) {

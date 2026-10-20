@@ -4,6 +4,7 @@ import { mutation, query, type QueryCtx } from "./_generated/server";
 import { audit } from "./lib/audit";
 import { requireUserId } from "./lib/auth";
 import { validateDailySetup, type DailySetupErrors } from "../src/lib/dailySetup";
+import type { DailyCallView } from "../src/lib/dailyDashboard";
 
 export const INVALID_SETUP = "INVALID_SETUP";
 
@@ -188,3 +189,95 @@ export const setPaused = mutation({
     return null;
   },
 });
+
+const CALLS_SHOWN = 30;
+const ALERTS_SHOWN = 10;
+
+async function myRecipient(ctx: QueryCtx, userId: Id<"users">) {
+  const circle = await myCircle(ctx, userId);
+  if (circle === null) return null;
+  return await ctx.db
+    .query("careRecipients")
+    .withIndex("by_circle", (q) => q.eq("circleId", circle._id))
+    .first();
+}
+
+/**
+ * The calls the family sees, newest first: placed calls that were answered
+ * (with their summary once it's ready) or went unanswered. Calls that
+ * couldn't be placed, or are still ringing, aren't shown.
+ */
+export async function loadCallViews(ctx: QueryCtx, userId: Id<"users">, limit = CALLS_SHOWN): Promise<DailyCallView[]> {
+  const recipient = await myRecipient(ctx, userId);
+  if (recipient === null) return [];
+  const views: DailyCallView[] = [];
+  const calls = ctx.db
+    .query("calls")
+    .withIndex("by_recipient_date", (q) => q.eq("recipientId", recipient._id))
+    .order("desc");
+  for await (const call of calls) {
+    if (call.userId !== userId) continue;
+    const answered = call.status === "processing" || call.status === "completed";
+    if (!answered && call.status !== "missed") continue;
+    const summary = answered
+      ? await ctx.db
+          .query("callSummaries")
+          .withIndex("by_call", (q) => q.eq("callId", call._id))
+          .unique()
+      : null;
+    views.push({
+      at: call._creationTime,
+      answered,
+      durationSeconds: call.durationSeconds ?? null,
+      mood: summary?.mood ?? null,
+      highlights: summary?.highlights ?? [],
+      checkIns: summary?.checkIns ?? [],
+      passOn: summary?.passOn ?? null,
+    });
+    if (views.length >= limit) break;
+  }
+  return views;
+}
+
+/** The family dashboard's call list. */
+export const myCalls = query({
+  args: {},
+  handler: async (ctx) => loadCallViews(ctx, await requireUserId(ctx)),
+});
+
+export async function loadAlerts(ctx: QueryCtx, userId: Id<"users">, limit = ALERTS_SHOWN) {
+  const circle = await myCircle(ctx, userId);
+  if (circle === null) return [];
+  const rows = await ctx.db
+    .query("alerts")
+    .withIndex("by_circle", (q) => q.eq("circleId", circle._id))
+    .order("desc")
+    .take(limit);
+  return rows.map((a) => ({ id: a._id, kind: a.kind, message: a.message, at: a.at }));
+}
+
+/** Things the family should know about right away, newest first. */
+export const myAlerts = query({
+  args: {},
+  handler: async (ctx) => loadAlerts(ctx, await requireUserId(ctx)),
+});
+
+/** Every call summary, alert and consent record, for the data export. Never the parent's transcript. */
+export async function loadDailyHistory(ctx: QueryCtx, userId: Id<"users">) {
+  const circle = await myCircle(ctx, userId);
+  if (circle === null) return null;
+  const recipient = await myRecipient(ctx, userId);
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const consentRecords =
+    recipient === null
+      ? []
+      : await ctx.db
+          .query("callConsentRecords")
+          .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
+          .collect();
+  return {
+    calls: (await loadCallViews(ctx, userId, 10_000)).map((c) => ({ ...c, at: iso(c.at) })),
+    alerts: (await loadAlerts(ctx, userId, 10_000)).map((a) => ({ kind: a.kind, message: a.message, at: iso(a.at) })),
+    parentAnswers: consentRecords.map((r) => ({ decision: r.decision, at: iso(r.at), theirWords: r.parentWords ?? null })),
+  };
+}

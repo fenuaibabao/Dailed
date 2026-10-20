@@ -84,7 +84,7 @@ export type DailySetupField =
 
 export type DailySetupErrors = Partial<Record<DailySetupField, string>>;
 
-function toMinutes(time: string): number {
+export function toMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
 }

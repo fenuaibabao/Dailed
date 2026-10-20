@@ -57,6 +57,18 @@ export const auditAction = v.union(
   v.literal("retention.purge"),
   v.literal("daily.setup"),
   v.literal("daily.pause"),
+  v.literal("daily.call_placed"),
+  v.literal("daily.consent"),
+  v.literal("daily.alert"),
+);
+
+// Why the family is being told something right away.
+export const alertKind = v.union(
+  v.literal("no_answer_twice"), // two calls in a row went unanswered
+  v.literal("concern"), // the parent said something worrying (a fall, pain, "help")
+  v.literal("declined"), // the parent said no to the calls on the first call
+  v.literal("unclear"), // the first call ended without a clear yes; calls are paused
+  v.literal("stopped"), // the parent asked Remi to stop calling
 );
 
 export const checkItem = v.union(v.literal("meds"), v.literal("sleep"), v.literal("meals"));
@@ -207,12 +219,21 @@ export default defineSchema({
     wovenAt: v.optional(v.number()), // set once the session has been grouped into Weaves
     purgedAt: v.optional(v.number()), // content deleted (retention or by the user); the row stays as a record
     sensitive: v.boolean(),
+    // Daily phone calls only. The row belongs to the adult child who set Daily
+    // up, but the words are the parent's: their transcript stays out of the
+    // child's session list and data export.
+    recipientId: v.optional(v.id("careRecipients")),
+    localDate: v.optional(v.string()), // "YYYY-MM-DD" in the parent's timezone
+    attempt: v.optional(v.number()), // 1 = first try that day, 2 = the retry
+    isConsentCall: v.optional(v.boolean()), // opened by asking the parent's permission
+    dialedE164: v.optional(v.string()), // the number called; a yes only counts for that number
   })
     .index("by_user", ["userId"])
     .index("by_user_app", ["userId", "appId"])
     .index("by_vapi_call_id", ["vapiCallId"])
     .index("by_status", ["status"])
-    .index("by_org", ["orgId"]),
+    .index("by_org", ["orgId"])
+    .index("by_recipient_date", ["recipientId", "localDate"]),
 
   memories: defineTable({
     userId: v.id("users"),
@@ -343,7 +364,49 @@ export default defineSchema({
     paused: v.boolean(),
   })
     .index("by_circle", ["circleId"])
-    .index("by_recipient", ["recipientId"]),
+    .index("by_recipient", ["recipientId"])
+    .index("by_paused", ["paused"]),
+
+  // The parent's own answer about the calls, as heard on a call. Never
+  // deleted: it's the proof a call was allowed (or the record that it wasn't).
+  callConsentRecords: defineTable({
+    recipientId: v.id("careRecipients"),
+    circleId: v.id("careCircles"),
+    phoneE164: v.string(), // consent belongs to whoever answers this number
+    decision: v.union(v.literal("granted"), v.literal("declined"), v.literal("revoked")),
+    consentText: v.string(), // what Remi said when asking
+    parentWords: v.optional(v.string()), // the parent's answer, from the transcript
+    callId: v.id("calls"),
+    at: v.number(),
+  }).index("by_recipient", ["recipientId"]),
+
+  // What the family sees after each answered call. Everything the parent said
+  // is reported as they said it. Anything they asked to keep private is left out.
+  callSummaries: defineTable({
+    callId: v.id("calls"),
+    circleId: v.id("careCircles"),
+    recipientId: v.id("careRecipients"),
+    at: v.number(), // when the call was placed
+    durationSeconds: v.optional(v.number()),
+    mood: v.optional(v.string()),
+    highlights: v.array(v.string()),
+    checkIns: v.array(v.string()),
+    passOn: v.optional(v.string()),
+  })
+    .index("by_call", ["callId"])
+    .index("by_circle", ["circleId"]),
+
+  // Things the family should hear about right away. Emailed once email is
+  // set up; until then they show on the dashboard. sentAt marks delivery.
+  alerts: defineTable({
+    circleId: v.id("careCircles"),
+    recipientId: v.id("careRecipients"),
+    callId: v.optional(v.id("calls")),
+    kind: alertKind,
+    message: v.string(),
+    at: v.number(),
+    sentAt: v.optional(v.number()),
+  }).index("by_circle", ["circleId"]),
 
   // Append-only record of who did what. Never holds session content.
   // Nothing updates or deletes these rows.
