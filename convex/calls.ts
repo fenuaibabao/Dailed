@@ -15,6 +15,7 @@ import { REMI_START_SPEAKING_PLAN } from "./lib/turnTaking";
 import { activeRecordingConsent } from "./consents";
 import { PHI_NOT_READY, missingBaas } from "./lib/phi";
 import { getMembership } from "./lib/roles";
+import { isOverSpendCap, SPEND_CAP_REACHED } from "./lib/spend";
 
 // If the end-of-call webhook hasn't arrived this long after the browser saw
 // the call end, the call is marked failed instead of spinning forever.
@@ -52,6 +53,7 @@ export const start = mutation({
     if ((await activeRecordingConsent(ctx, userId)) === null) {
       throw new ConvexError("RECORDING_CONSENT_REQUIRED");
     }
+    if (await isOverSpendCap(ctx)) throw new ConvexError(SPEND_CAP_REACHED);
     const trimmedFocus = focus?.trim().slice(0, FOCUS_MAX_LENGTH) || undefined;
     const mode = "open" as const;
 

@@ -162,7 +162,7 @@ I don't want to break any laws. Have legal review before launch.
 - Now: Daily-first roadmap item 3, the rest of the design pass: family setup and the family dashboard at `/app/daily`, in one PR. It's open and waits on my OK to merge. Nothing calls anyone until phone calls are built.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - **Strategy changed on 2026-10-11 to Daily-first** (Vision, section 3). Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were already built and live before that. They stay as they are, with no new work on them until after the Daily pilot.
-- Not built yet: the admin cost page and daily spend cap (section 10), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
+- Not built yet: the admin cost page (section 10; the spend cap is in the open emails PR), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
 ## 6. Roadmap (in order)
 
@@ -249,6 +249,8 @@ Keep the LLM behind a provider interface so we can switch to a BAA-covered model
 - **Env var names:**
   - Convex: `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL`, `REMI_ASSISTANT_ID`, `VAPI_WEBHOOK_SECRET`, `OPENAI_API_KEY`.
   - Convex, for Daily phone calls (all unset = no calls): `DAILY_CALLS_ENABLED` (`1` turns the scheduler on), `DAILY_ALLOWED_NUMBERS` (comma-separated E.164 numbers it may call while testing), `DAILY_ALLOW_ALL_NUMBERS` (`1` for the pilot only), `VAPI_PRIVATE_KEY`, `VAPI_PHONE_NUMBER_ID` (the paid Twilio number imported into Vapi).
+  - Convex, for family emails (all unset = no emails): `DAILY_EMAILS_ENABLED` (`1` turns sending on), `RESEND_API_KEY`, `DAILY_EMAIL_FROM` (e.g. `Daily <daily@yourdomain.com>`, on a domain verified in Resend). `SITE_URL` gives the dashboard link in the owner's emails.
+  - Convex, spend cap: `SPEND_CAP_USD_PER_DAY` (defaults to 20 when unset).
   - Vercel (Production): `CONVEX_DEPLOY_KEY`, `VAPI_PUBLIC_KEY`, `VAPI_PRIVATE_KEY`, `VAPI_WEBHOOK_SECRET`.
 - Later: Stripe, Twilio, Resend (email), Sentry (errors), and possibly the Vapi MCP.
 
@@ -362,3 +364,5 @@ Sections 3–5 add: weaves, orgs, memberships/roles and audit_log. Always derive
 - 2026-10-19: Alerts are stored and shown at the top of the family dashboard: two unanswered calls in a row, worrying words (a fall, can't get up, chest pain, breathing trouble, confusion, "help", stroke signs; caught by the model and by a word list, quoting the parent's words), a no, no clear answer, and a stop. Email delivery comes next and needs my OK for an email service.
 - 2026-10-19: A Daily call row belongs to the adult child, but the transcript and recording are the parent's: they stay out of the child's sessions list and data export, and so do Remi's memories of the parent. The family sees only the summary (mood, highlights, self-reported check-ins, anything passed on), and only after the parent said yes. Anything the parent asks to keep private is left out unless it's about safety.
 - 2026-10-19: Daily is seeded (app row and Remi persona with its own prompt) before launch so scheduled calls can run, while `/daily` still says "coming soon" and browser sessions stay refused. Daily calls are capped at 20 minutes, and Remi waits longer before speaking than in Create.
+- 2026-10-23: Family emails go through Resend (free tier to start), switched off by default with `DAILY_EMAILS_ENABLED`. Each alert is emailed right away to family members who get alerts; each call summary to those who get summaries. One email per person, so addresses aren't shared. Never the transcript. Other family members' emails say who added them and to ask that person to remove them. A send Resend refuses stays unsent; Resend's idempotency key stops double sends.
+- 2026-10-23: Global spend cap: when the last 24 hours of voice spend (known costs, plus $2 for each call still running) reach `SPEND_CAP_USD_PER_DAY` (default $20), new browser sessions are refused with a plain message and the Daily scheduler places no calls. Calls already running finish.

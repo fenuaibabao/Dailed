@@ -253,7 +253,7 @@ export async function loadAlerts(ctx: QueryCtx, userId: Id<"users">, limit = ALE
     .withIndex("by_circle", (q) => q.eq("circleId", circle._id))
     .order("desc")
     .take(limit);
-  return rows.map((a) => ({ id: a._id, kind: a.kind, message: a.message, at: a.at }));
+  return rows.map((a) => ({ id: a._id, kind: a.kind, message: a.message, at: a.at, emailed: a.sentAt !== undefined }));
 }
 
 /** Things the family should know about right away, newest first. */

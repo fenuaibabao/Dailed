@@ -392,6 +392,7 @@ export default defineSchema({
     highlights: v.array(v.string()),
     checkIns: v.array(v.string()),
     passOn: v.optional(v.string()),
+    emailedAt: v.optional(v.number()), // set once the family email went out
   })
     .index("by_call", ["callId"])
     .index("by_circle", ["circleId"]),

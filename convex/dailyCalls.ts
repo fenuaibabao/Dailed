@@ -14,6 +14,7 @@ import { processDailyTranscript, type DailyOutcome } from "./lib/dailyProcessing
 import { buildVapiCallRequest, VAPI_CALL_URL, vapiCallIdFrom } from "./lib/dailyVapi";
 import { getLlmProvider } from "./lib/llm";
 import { selectPromptMemories } from "./lib/promptContext";
+import { isOverSpendCap } from "./lib/spend";
 import { redact } from "./lib/redaction";
 import type { PromptSummary } from "./lib/sessionPrompt";
 import { decideCall, isNumberAllowed, localClock, NOT_ANSWERED_REASONS } from "../src/lib/dailySchedule";
@@ -62,6 +63,10 @@ export const tick = internalMutation({
     if (!enabled) return { queued: 0 };
     const daily = await dailyApp(ctx);
     if (daily === null) return { queued: 0 };
+    if (await isOverSpendCap(ctx)) {
+      console.warn("Daily: the 24-hour spend cap is reached; no calls are placed until spend falls under it.");
+      return { queued: 0 };
+    }
 
     const now = Date.now();
     let queued = 0;
@@ -303,7 +308,15 @@ async function addAlert(
   message: string,
   callId?: Id<"calls">,
 ) {
-  await ctx.db.insert("alerts", { circleId: recipient.circleId, recipientId: recipient._id, callId, kind, message, at: Date.now() });
+  const alertId = await ctx.db.insert("alerts", {
+    circleId: recipient.circleId,
+    recipientId: recipient._id,
+    callId,
+    kind,
+    message,
+    at: Date.now(),
+  });
+  await ctx.scheduler.runAfter(0, internal.dailyEmails.sendAlert, { alertId });
   const circle = await ctx.db.get(recipient.circleId);
   await audit(ctx, { action: "daily.alert", userId: circle?.ownerId, targetId: callId, details: { kind } });
 }
@@ -457,7 +470,7 @@ export const saveOutcome = internalMutation({
 
     // The family only hears about the call itself once the parent has said yes.
     if (consent === "granted" || consent === "revoked") {
-      await ctx.db.insert("callSummaries", {
+      const summaryId = await ctx.db.insert("callSummaries", {
         callId,
         circleId: recipient.circleId,
         recipientId: recipient._id,
@@ -468,6 +481,7 @@ export const saveOutcome = internalMutation({
         checkIns: outcome.checkIns,
         passOn: outcome.passOn ?? undefined,
       });
+      await ctx.scheduler.runAfter(0, internal.dailyEmails.sendSummary, { summaryId });
     }
     if (consent === "granted") {
       for (const memory of outcome.memories) {
