@@ -3,7 +3,7 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ASSISTANT_NAME } from "@/config/brand";
+import { ASSISTANT_NAME, NOT_A_PERSON } from "@/config/brand";
 import { api } from "../../../convex/_generated/api";
 import { grantRecordingConsent } from "@/app/app/session/actions";
 import { RECORDING_CONSENT_TEXT } from "@/lib/consent";
@@ -61,7 +61,7 @@ export function ConsentStep({ product }: { product: { slug: string; recordingPur
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <p className="eyebrow">One quick thing</p>
-        <h1 className="m-0 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Before your first session</h1>
+        <h1 className="m-0 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Before you talk with {ASSISTANT_NAME}</h1>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0 text-soft">
         <Point
@@ -72,7 +72,7 @@ export function ConsentStep({ product }: { product: { slug: string; recordingPur
             </svg>
           }
         >
-          {ASSISTANT_NAME} is an AI interviewer, not a person.
+          {ASSISTANT_NAME} is {NOT_A_PERSON}.
         </Point>
         <Point
           icon={
@@ -82,7 +82,7 @@ export function ConsentStep({ product }: { product: { slug: string; recordingPur
             </svg>
           }
         >
-          Sessions are recorded {product.recordingPurpose}.
+          We record your talks {product.recordingPurpose}.
         </Point>
         <Point
           icon={
@@ -92,7 +92,7 @@ export function ConsentStep({ product }: { product: { slug: string; recordingPur
             </svg>
           }
         >
-          Your sessions are private to you. You can delete any of them, any time.
+          Only you can see your talks. You can delete any of them, any time.
         </Point>
       </ul>
       <label
@@ -120,7 +120,7 @@ export function ConsentStep({ product }: { product: { slug: string; recordingPur
         {saving ? "Saving…" : "Continue"}
       </button>
       {!agreed && (
-        <p className="m-0 text-center text-sm text-muted">Tick the box to continue. Sessions can&apos;t start without it.</p>
+        <p className="m-0 text-center text-sm text-muted">Check the box to keep going. You can&apos;t talk with {ASSISTANT_NAME} without it.</p>
       )}
       {error && (
         <p role="alert" className="m-0 text-sm text-danger">

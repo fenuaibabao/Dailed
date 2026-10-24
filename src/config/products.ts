@@ -56,13 +56,13 @@ export type ProductConfig = {
 
 const SUMMARY: OutputTemplate = {
   kind: "session_summary",
-  label: "Session summary",
+  label: "What you talked about",
   instructions: "A bird's-eye summary of the session in 5 to 8 sentences.",
   maxCount: 1,
 };
 const THEMES: OutputTemplate = {
   kind: "theme",
-  label: "Themes",
+  label: "Big ideas",
   instructions: "3 to 5 big-picture through-lines across what they said.",
   maxCount: 5,
 };
@@ -73,11 +73,11 @@ const create: ProductConfig = {
   slug: "create",
   name: `${BRAND_NAME} Create`,
   enabled: true,
-  headline: "Talk it through. Get drafts in your own words.",
+  headline: "Just talk. Get a week of posts in your own words.",
   audience: "Creators, coaches and solo experts who need to post but hate writing",
   interviewFocus:
     "This is Create. Draw out stories, opinions, lessons and moments they could share publicly, so they can be turned into posts and scripts in their own words.",
-  recordingPurpose: "to make your drafts",
+  recordingPurpose: "so we can turn your words into posts",
   maxSessionSeconds: NINETY_MINUTES,
   outputs: [
     SUMMARY,
@@ -91,7 +91,7 @@ const create: ProductConfig = {
     },
     {
       kind: "script",
-      label: "Short-video scripts",
+      label: "Video scripts",
       instructions: "Hook, 3 beats, close. Under 60 seconds spoken.",
       maxCount: 2,
     },
@@ -101,7 +101,7 @@ const create: ProductConfig = {
       instructions: "Only when the session has enough material for one.",
       maxCount: 1,
     },
-    { kind: "idea", label: "Ideas", instructions: "Seeds for future sessions.", maxCount: 10 },
+    { kind: "idea", label: "Ideas for next time", instructions: "Seeds for future sessions.", maxCount: 10 },
   ],
   recipient: "self",
 };
@@ -110,18 +110,18 @@ const clarity: ProductConfig = {
   slug: "clarity",
   name: `${BRAND_NAME} Clarity`,
   enabled: true,
-  headline: "Think out loud. See what you really think.",
+  headline: "Talk it out. See what you really think.",
   audience: "People working through a decision, a direction or a busy mind, without writing",
   interviewFocus:
     "This is Clarity, a private reflection session. Help them think out loud about what's on their mind: decisions, direction, what's working and what isn't. Nothing from this session is meant for publishing. If they disclose abuse, a crisis or thoughts of self-harm, respond with care and suggest they reach out to someone they trust or a local crisis line.",
-  recordingPurpose: "to make your private summary",
+  recordingPurpose: "so we can write your private note",
   maxSessionSeconds: NINETY_MINUTES,
   outputs: [
     SUMMARY,
     THEMES,
     {
       kind: "idea",
-      label: "Open threads",
+      label: "Still thinking about",
       instructions: "Questions and threads worth coming back to next time.",
       maxCount: 10,
     },
@@ -133,16 +133,16 @@ const founder: ProductConfig = {
   slug: "founder",
   name: `${BRAND_NAME} Founder`,
   enabled: true,
-  headline: "Talk through the week. Get your investor update.",
+  headline: "Talk about your week. Get your update for investors.",
   audience: "Early-stage founders who owe investors updates and want a record of their decisions",
   interviewFocus:
     "This is Founder, a founder's weekly check-in. Cover the week in this rough order, following their energy: what shipped or moved forward; the numbers they track (revenue, users, growth, runway), without pressing if they'd rather not share; customers and what they learned from them; decisions they made or are weighing, and why; what's blocking them or worrying them; and what help or introductions they'd ask investors for. Near the end, ask how they're doing personally this week. Never estimate or suggest numbers yourself.",
-  recordingPurpose: "to make your investor update and founder notes",
+  recordingPurpose: "so we can write your investor update and notes",
   maxSessionSeconds: NINETY_MINUTES,
   outputs: [
     {
       kind: "session_summary",
-      label: "Weekly reflection",
+      label: "Your week",
       instructions: "How the week went, in 5 to 8 sentences.",
       maxCount: 1,
     },
@@ -155,13 +155,13 @@ const founder: ProductConfig = {
     },
     {
       kind: "decision",
-      label: "Decision log",
+      label: "What you decided",
       instructions: "Each decision made or being weighed, with their reasoning.",
       maxCount: 5,
     },
     {
       kind: "pitch",
-      label: "Pitch narrative",
+      label: "Your company story",
       instructions: "Problem, solution, why now and traction, only when they talked about the company enough.",
       maxCount: 1,
     },
@@ -193,13 +193,13 @@ const daily: ProductConfig = {
     "daily",
     "Daily",
     "A friendly check-in call for your mom or dad, every day.",
-    "For families with aging parents",
+    "For families with older parents",
   ),
   seededBeforeLaunch: true,
   maxSessionSeconds: 20 * 60,
   outputs: [],
   disclaimer:
-    "Daily is a friendly check-in call, not a medical or emergency service. In an emergency, call 911.",
+    "Daily is a friendly check-in call. It is not a doctor or an emergency service. In an emergency, call 911.",
 };
 
 export const PRODUCTS = {
@@ -211,18 +211,18 @@ export const PRODUCTS = {
     "legacy",
     "Legacy",
     "Tell your stories. Keep them for the family.",
-    "Older adults and families preserving life stories",
+    "Older adults and families keeping their life stories",
   ),
   voices: comingSoon(
     "voices",
     "Voices",
-    "Customer interviews at scale, in their words.",
+    "Talk with lots of customers. Hear it in their words.",
     "Product, research and marketing teams",
   ),
   intake: comingSoon(
     "intake",
     "Intake",
-    "Patient intake conversations, summarized for clinicians.",
+    "A chat before the doctor visit, written up for the doctor.",
     "Clinics and practices",
   ),
 } as const satisfies Record<string, ProductConfig>;

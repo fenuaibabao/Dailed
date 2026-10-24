@@ -56,7 +56,7 @@ describe("start", () => {
     expect(result.assistantOverrides.model.messages[0].content.startsWith(remiSystemPrompt(PRODUCTS.clarity))).toBe(
       true,
     );
-    expect(result.assistantOverrides.firstMessage).toContain("to make your private summary");
+    expect(result.assistantOverrides.firstMessage).toContain("so we can write your private note");
     const call = await t.run((ctx) => ctx.db.get(result.callId));
     const app = await t.run((ctx) => ctx.db.get(call!.appId));
     expect(app?.slug).toBe("clarity");

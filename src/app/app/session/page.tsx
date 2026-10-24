@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { enabledProductOrDefault } from "@/config/products";
 import { SessionPanel } from "./SessionPanel";
 
-export const metadata: Metadata = { title: "Session" };
+export const metadata: Metadata = { title: "Talk" };
 
 export default async function SessionPage({
   searchParams,

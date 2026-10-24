@@ -35,7 +35,7 @@ test("sign up asks for consent, lands on /app/session, and the session survives 
   await expect(page).toHaveURL(/\/consent$/);
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
   await agreeToRecording(page);
-  await expect(page.getByRole("heading", { name: "Talk it through with Remi" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Talk with Remi" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start talking" })).toBeEnabled();
 
   // Once given, the consent step sends people straight on.

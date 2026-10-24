@@ -26,20 +26,30 @@ export function describeActivity(action: string, details: Details): string {
       return "Invite code replaced";
     case "org.retention":
     case "user.retention":
-      return `Keep sessions: ${RETENTION(d.days)}`;
+      return `Keep talks: ${RETENTION(d.days)}`;
     case "org.redaction":
     case "user.redaction":
-      return `Hide numbers and emails in transcripts: ${ON_OFF(d.on)}`;
+      return `Hide numbers and emails: ${ON_OFF(d.on)}`;
     case "data.export":
-      return "Downloaded a copy of the data";
+      return "Downloaded a copy of everything";
     case "session.delete":
-      return "Deleted a session";
+      return "Deleted a talk";
     case "daily.setup":
       return d.created ? "Set up Daily" : "Changed the Daily setup";
     case "daily.pause":
       return d.paused ? "Paused Daily calls" : "Resumed Daily calls";
     case "retention.purge":
-      return `Deleted ${d.sessions} expired ${d.sessions === 1 ? "session" : "sessions"}`;
+      return `Deleted ${d.sessions} old ${d.sessions === 1 ? "talk" : "talks"}`;
+    case "daily.call_placed":
+      return "Daily placed a call";
+    case "daily.consent":
+      return d.decision === "granted"
+        ? "Your parent said yes to the calls"
+        : d.decision === "declined"
+          ? "Your parent said no to the calls"
+          : "Your parent asked to stop the calls";
+    case "daily.alert":
+      return "Daily sent you an alert";
     default:
       return action;
   }

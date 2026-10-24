@@ -24,7 +24,7 @@ describe("summary email", () => {
     expect(email.text).toContain(`Mom talked with ${ASSISTANT_NAME} for 6 minutes. Sounded cheerful.`);
     expect(email.text).toContain("Mon, Oct 19, 9:15am");
     expect(email.text).toContain("Said she took her morning pills.");
-    expect(email.text).toContain("not a medical or emergency service");
+    expect(email.text).toContain("It is not a doctor or an emergency service.");
     expect(email.text).toContain("https://dailed.vercel.app/app/daily");
     expect(email.html).toContain("Talked about the tomatoes.");
   });

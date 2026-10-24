@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { api } from "../../../../convex/_generated/api";
-import { ASSISTANT_NAME } from "@/config/brand";
+import { ASSISTANT_NAME, NOT_A_PERSON } from "@/config/brand";
 import { PRODUCTS } from "@/config/products";
 import { DailyDashboard, timezoneLabel, type SavedSetup as Saved } from "./DailyDashboard";
 import {
@@ -267,7 +267,7 @@ function SetupForm({
         />
         <div>
           <label htmlFor={FIELD_IDS.timezone} className="label text-[15px]">
-            Their timezone
+            Their time zone
           </label>
           <select
             id={FIELD_IDS.timezone}
@@ -287,7 +287,7 @@ function SetupForm({
 
       <Section
         title="When to call"
-        hint={`${ASSISTANT_NAME} calls once in this window, in ${name === "your parent" ? "your parent's" : `${name}'s`} own time. Calls only happen between 8am and 9pm.`}
+        hint={`${ASSISTANT_NAME} calls one time in this window, using ${name === "your parent" ? "your parent's" : `${name}'s`} clock. ${ASSISTANT_NAME} never calls before 8am or after 9pm.`}
       >
         <div role="group" aria-labelledby="days-label" aria-describedby={errors.days ? "days-error" : undefined}>
           <p id="days-label" className="label text-[15px]">
@@ -355,7 +355,7 @@ function SetupForm({
         <FieldError id="window-error" error={errors.window} />
       </Section>
 
-      <Section title="What to talk about" hint="Separate topics with commas.">
+      <Section title="What to talk about" hint="Put a comma between each one.">
         <TopicsField
           id={FIELD_IDS.talkAbout}
           label="Things they love to talk about"
@@ -367,7 +367,7 @@ function SetupForm({
         <TopicsField
           id={FIELD_IDS.avoid}
           label="Topics to stay away from"
-          hint="Optional. Like: politics, Dad's illness"
+          hint="You can skip this. Like: politics, Dad's illness"
           value={form.avoid}
           onChange={(v) => set("avoid", v)}
           error={errors.avoid}
@@ -375,8 +375,8 @@ function SetupForm({
       </Section>
 
       <Section
-        title="Gentle check-ins"
-        hint={`Optional. ${ASSISTANT_NAME} asks these in passing and tells you what ${name} said. It never gives medical advice.`}
+        title="Little check-ins"
+        hint={`You can skip this. ${ASSISTANT_NAME} asks these the way a friend would, then tells you what ${name} said. ${ASSISTANT_NAME} never gives medical advice.`}
       >
         <div className="space-y-2">
           {CHECK_ITEMS.map((item) => (
@@ -393,7 +393,7 @@ function SetupForm({
         </div>
       </Section>
 
-      <Section title="Who gets the summary" hint="Everyone here gets a short summary after each call, and an alert if something seems wrong.">
+      <Section title="Who gets the note" hint="Everyone here gets a short note after each call, and a message right away if something seems wrong.">
         <p className="m-0 text-[17px]">
           You{ownerEmail ? <span className="text-soft"> ({ownerEmail})</span> : null}
         </p>
@@ -449,7 +449,7 @@ function SetupForm({
 
       <Section
         title="Emergency contact"
-        hint={`If a call sounds like an emergency, ${ASSISTANT_NAME} tells ${name} to hang up and call 911, then lets you and this person know.`}
+        hint={`If a call sounds like an emergency, ${ASSISTANT_NAME} tells ${name} to hang up and call 911. Then ${ASSISTANT_NAME} tells you and this person.`}
       >
         <TextField
           id={FIELD_IDS.emergencyName}
@@ -472,8 +472,8 @@ function SetupForm({
 
       <div className="card flex flex-col gap-4 p-6">
         <p className="m-0 text-[17px]" data-testid="consent-explainer">
-          On the first call, {ASSISTANT_NAME} tells {name} it&apos;s an AI, that calls are recorded and that you get a
-          summary, then asks if it can keep calling. Only {name} can say yes.
+          On the first call, {ASSISTANT_NAME} tells {name} that {ASSISTANT_NAME} is {NOT_A_PERSON}, that calls are recorded,
+          and that you get a short note. Then {ASSISTANT_NAME} asks, &ldquo;Can I call you each day?&rdquo; Only {name} can say yes.
         </p>
         {failed && (
           <p role="alert" className="m-0 text-danger">
@@ -482,7 +482,7 @@ function SetupForm({
         )}
         {Object.keys(errors).length > 0 && (
           <p role="alert" className="m-0 text-danger">
-            Please fix the highlighted answers above.
+            Please fix the answers marked in red above.
           </p>
         )}
         <div className="flex flex-wrap gap-3">
@@ -531,13 +531,13 @@ export function DailySetupPanel() {
           {saved ? `Daily for ${saved.parentName}` : "Set up Daily for your parent"}
         </h1>
         <p className="mt-3 text-[17px] text-soft">
-          {ASSISTANT_NAME} calls at the time you pick for a short, friendly chat. You get a summary after each call.
+          {ASSISTANT_NAME} calls your parent at the time you pick for a short, friendly chat. After each call, you get a short note.
         </p>
       </div>
 
       <p className="notice text-[15px]" data-testid="not-calling-yet">
-        Daily is in testing: {ASSISTANT_NAME} only calls numbers on our test list until it launches. On the first call,
-        your parent decides whether the calls go on.
+        Daily is still being tested. For now, {ASSISTANT_NAME} only calls phone numbers on our test list. On the first call,
+        your parent decides if the calls keep going.
       </p>
       <p className="m-0 text-sm text-muted">{PRODUCTS.daily.disclaimer}</p>
 
