@@ -16,6 +16,7 @@ import {
 import { CHECK_ITEM_SHORT, COMMON_TIMEZONES, describeDays, formatPhone, formatTime } from "@/lib/dailySetup";
 
 export type SavedSetup = NonNullable<FunctionReturnType<typeof api.daily.mySetup>>;
+export type DailyAlert = FunctionReturnType<typeof api.daily.myAlerts>[number];
 
 export function timezoneLabel(value: string): string {
   return COMMON_TIMEZONES.find((tz) => tz.value === value)?.label ?? value.replace(/_/g, " ");
@@ -37,6 +38,26 @@ function Status({ saved }: { saved: SavedSetup }) {
       <span aria-hidden="true" className="h-2 w-2 rounded-full bg-current" />
       {text}
     </p>
+  );
+}
+
+/** Things the family should know now. Shown on top; email delivery comes later. */
+function Alerts({ alerts, timezone }: { alerts: DailyAlert[]; timezone: string }) {
+  if (alerts.length === 0) return null;
+  return (
+    <section className="card flex flex-col gap-3 border border-danger-border bg-danger-surface p-6" aria-labelledby="alerts-h" data-testid="daily-alerts">
+      <h2 id="alerts-h" className="section-title m-0">
+        Needs your attention
+      </h2>
+      <ul className="m-0 flex list-none flex-col gap-3 p-0">
+        {alerts.slice(0, 3).map((alert) => (
+          <li key={alert.id} className="flex flex-col gap-0.5">
+            <span className="text-[17px]">{alert.message}</span>
+            <span className="text-sm text-muted">{formatCallTime(alert.at, timezone)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -197,11 +218,13 @@ function Setup({ saved, onEdit }: { saved: SavedSetup; onEdit: () => void }) {
 export function DailyDashboard({
   saved,
   calls,
+  alerts = [],
   onEdit,
   now = Date.now(),
 }: {
   saved: SavedSetup;
   calls: DailyCallView[];
+  alerts?: DailyAlert[];
   onEdit: () => void;
   now?: number;
 }) {
@@ -210,6 +233,7 @@ export function DailyDashboard({
   return (
     <div className="flex flex-col gap-5">
       <Status saved={saved} />
+      <Alerts alerts={alerts} timezone={saved.timezone} />
       <div className="flex flex-wrap gap-4">
         <Stat
           label="This week"

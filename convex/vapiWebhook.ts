@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation } from "./_generated/server";
+import { recordDailyReport } from "./dailyCalls";
 import { redact } from "./lib/redaction";
 import { timingSafeEqualStrings } from "./lib/secrets";
 
@@ -60,6 +61,13 @@ export const recordEndOfCallReport = mutation({
     }
     if (call.reportReceivedAt !== undefined) {
       return { outcome: "duplicate" as const };
+    }
+
+    // Daily phone calls: an unanswered call is "missed", not a failure, and the
+    // family summary replaces drafts.
+    if (call.recipientId !== undefined) {
+      await recordDailyReport(ctx, call, report);
+      return { outcome: "updated" as const };
     }
 
     // Redaction: the person's setting, the workspace's, or health-data mode.

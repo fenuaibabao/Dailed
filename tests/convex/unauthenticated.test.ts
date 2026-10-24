@@ -86,6 +86,8 @@ const CASES: Record<string, (f: Fixture) => Promise<DefaultFunctionArgs>> = {
   "privacy:exportMine": async () => ({}),
   "privacy:myActivity": async () => ({}),
   "daily:mySetup": async () => ({}),
+  "daily:myCalls": async () => ({}),
+  "daily:myAlerts": async () => ({}),
   "daily:saveSetup": async () => VALID_DAILY_SETUP,
   "daily:setPaused": async ({ t, userId }) => {
     await t.withIdentity({ subject: `${userId}|test-session` }).mutation(api.daily.saveSetup, VALID_DAILY_SETUP);
