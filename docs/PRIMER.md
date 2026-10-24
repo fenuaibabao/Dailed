@@ -139,7 +139,7 @@ I don't want to break any laws. Have legal review before launch.
 - No WARPWORK/WARPWORKS marks found in my quick search. Still to do: domain and social handles, plus a proper trademark clearance before launch.
 - "Suite" is the word for the product family.
 
-## 5. Current state (2026-10-11, verify with git)
+## 5. Current state (2026-10-23, verify with git)
 
 - Repo **fenuaibabao/Dailed**, live at **https://dailed.vercel.app**.
 - Merged:
@@ -160,10 +160,14 @@ I don't want to break any laws. Have legal review before launch.
   - #14 Redesign step 3: sign in, sign up and the one-time consent step. It also fixed a live bug where every sign-in or sign-up failure showed "Something went wrong on our side", and it carries the Daily-first primer update.
   - #15 Section 2 for Daily: Daily as a "coming soon" product at `/daily`, the assistant's name as config (`ASSISTANT_NAME`), and a Products menu on every product page and in the signed-in app.
   - #16 Daily design pass 1: the Daily page explains the service (how it works, an example summary, the safety promises), still "coming soon".
-- Now: Daily-first roadmap item 3, the rest of the design pass: family setup and the family dashboard at `/app/daily`, in one PR. It's open and waits on my OK to merge. Nothing calls anyone until phone calls are built.
+  - #17 Daily design pass 2: family setup and the family dashboard at `/app/daily` (2026-10-19).
+  - #18 Daily phone calls: scheduler, first-call consent, "stop calling me", missed-call and worry alerts, real calls on the family dashboard. Off by default (2026-10-23).
+  - #19 Family emails (off by default) and the global 24-hour spend cap (2026-10-23).
+  - #20 Plain words everywhere: no "AI" in anything users see or hear; Remi is a "voice companion" (2026-10-23).
+- Now: roadmap item 4 (phone calls) is built and live but switched off. Next: the Twilio upgrade (about $20, founder), the Convex settings in section 8, then the first test call to the founder's own number. Emails need a Resend account and a verified sending domain.
 - The end-to-end loop works: sign up → browser session → webhook → Convex call row → outputs. The first session ran 226 s, cost $0.26 and produced 9 outputs, but **no posts or scripts**. Drafts were dropped because quotes had to match the transcript word for word (fixed in #5; needs a live re-test).
 - **Strategy changed on 2026-10-11 to Daily-first** (Vision, section 3). Weaves, workspaces/roles/`phi_mode`, the audit log and Founder were already built and live before that. They stay as they are, with no new work on them until after the Daily pilot.
-- Not built yet: the admin cost page (section 10; the spend cap is in the open emails PR), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
+- Not built yet: the admin cost page (section 10; the spend cap is live), memory view/edit/delete and delete account (section 12), the Anthropic LLM adapter (stubbed; OpenAI and xAI work).
 
 ## 6. Roadmap (in order)
 
