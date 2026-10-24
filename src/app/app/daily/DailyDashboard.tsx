@@ -82,8 +82,8 @@ function LatestCall({ call, saved }: { call: DailyCallView | null; saved: SavedS
           Latest call
         </h2>
         <p className="m-0 text-[17px] text-soft">
-          After {ASSISTANT_NAME}&apos;s first call with {saved.parentName}, the summary shows up here: how they sounded,
-          what they talked about, and anything they asked {ASSISTANT_NAME} to pass on.
+          After {ASSISTANT_NAME}&apos;s first call with {saved.parentName}, a short note shows up here: how they sounded,
+          what they talked about, and anything they want you to know.
         </p>
       </section>
     );
@@ -96,7 +96,7 @@ function LatestCall({ call, saved }: { call: DailyCallView | null; saved: SavedS
   ];
   if (call.highlights.length > 0) parts.push({ label: "Highlights", body: call.highlights.join(" ") });
   if (call.checkIns.length > 0) parts.push({ label: `${saved.parentName} said`, body: call.checkIns.join(" ") });
-  if (call.passOn) parts.push({ label: "Passing on", body: call.passOn });
+  if (call.passOn) parts.push({ label: "They want you to know", body: call.passOn });
   return (
     <section className="card flex flex-col gap-4 p-6" aria-labelledby="latest-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -113,7 +113,7 @@ function LatestCall({ call, saved }: { call: DailyCallView | null; saved: SavedS
           </div>
         ))}
       </dl>
-      <p className="m-0 text-sm text-muted">What {saved.parentName} says about medicine, sleep or meals is passed on as they said it.</p>
+      <p className="m-0 text-sm text-muted">We tell you what {saved.parentName} said about medicine, sleep or meals, just the way they said it.</p>
     </section>
   );
 }
@@ -133,7 +133,7 @@ function RecentCalls({ calls, timezone }: { calls: DailyCallView[]; timezone: st
             <li key={call.at} className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-t border-border py-3 first:border-t-0">
               <span className="text-[17px]">{formatCallTime(call.at, timezone)}</span>
               <span className={`text-[15px] ${call.answered ? "text-soft" : "font-medium text-danger"}`}>
-                {call.answered ? `Answered, ${describeDuration(call.durationSeconds)}` : "No answer"}
+                {call.answered ? `Picked up, talked ${describeDuration(call.durationSeconds)}` : "Didn't pick up"}
               </span>
             </li>
           ))}
@@ -152,7 +152,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const CONSENT_TEXT: Record<SavedSetup["callConsent"], string> = {
-  not_asked: "Not asked yet. Asked on the first call.",
+  not_asked: "Not asked yet. We ask on the first call.",
   granted: "Said yes to the calls.",
   declined: `Said no. ${ASSISTANT_NAME} won't call.`,
   revoked: `Asked ${ASSISTANT_NAME} to stop calling.`,
@@ -207,7 +207,7 @@ function Setup({ saved, onEdit }: { saved: SavedSetup; onEdit: () => void }) {
         <Row label="Check-ins">
           {saved.checkItems.length > 0 ? saved.checkItems.map((c) => CHECK_ITEM_SHORT[c]).join(", ") : "None"}
         </Row>
-        <Row label="Summary goes to">{["You", ...saved.familyMembers.map((m) => `${m.name} (${m.email})`)].join(", ")}</Row>
+        <Row label="Notes go to">{["You", ...saved.familyMembers.map((m) => `${m.name} (${m.email})`)].join(", ")}</Row>
         <Row label="Emergency contact">
           {saved.emergencyName}, {formatPhone(saved.emergencyPhone)}
         </Row>
@@ -241,12 +241,12 @@ export function DailyDashboard({
         <Stat
           label="This week"
           value={week.total === 0 ? "No calls yet" : `${week.answered} of ${week.total}`}
-          note={week.total === 0 ? "Calls from the last 7 days show here." : "calls answered in the last 7 days"}
+          note={week.total === 0 ? "Calls from the last 7 days show up here." : "calls picked up in the last 7 days"}
         />
         <Stat
           label="In a row"
           value={String(streak)}
-          note={streak === 1 ? "call answered in a row" : "calls answered in a row"}
+          note={streak === 1 ? "call picked up in a row" : "calls picked up in a row"}
         />
       </div>
       <LatestCall call={latestAnswered(calls)} saved={saved} />

@@ -169,7 +169,7 @@ export function validateDailySetup(
   const parentPhone = normalizePhone(input.parentPhone);
   if (parentPhone === null) errors.parentPhone = PHONE_HELP;
 
-  if (!isValidTimezone(input.timezone)) errors.timezone = "Pick the timezone your parent lives in.";
+  if (!isValidTimezone(input.timezone)) errors.timezone = "Pick the time zone your parent lives in.";
 
   const days = [...new Set(input.days)].sort((a, b) => a - b);
   if (days.length === 0 || days.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {

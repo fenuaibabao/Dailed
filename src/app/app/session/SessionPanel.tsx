@@ -17,11 +17,11 @@ type Status = Doc<"calls">["status"];
 const STATUS_LABEL: Record<Status, string> = {
   queued: "Getting ready…",
   connecting: "Connecting…",
-  in_session: "In session",
-  processing: "Processing your drafts…",
+  in_session: "Talking now",
+  processing: "Making your results…",
   completed: "Done",
   missed: "Missed",
-  failed: "Didn't complete",
+  failed: "Didn't finish",
 };
 
 const LIVE_STATUSES: Status[] = ["queued", "connecting", "in_session"];
@@ -40,7 +40,7 @@ function formatDuration(seconds: number | null) {
 /** The product this page runs, chosen by the URL the user came in through. */
 export type SessionProduct = { slug: string; name: string };
 
-const MODE_LABEL: Record<Doc<"calls">["mode"], string> = { quick: "Quick", deep: "Deep", open: "Session" };
+const MODE_LABEL: Record<Doc<"calls">["mode"], string> = { quick: "Quick", deep: "Deep", open: "Talk" };
 
 export function SessionPanel({ product }: { product: SessionProduct }) {
   const { isAuthenticated } = useConvexAuth();
@@ -79,13 +79,13 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
         <section className="card space-y-5 p-6">
           <div>
             <p className="eyebrow">{product.name}</p>
-            <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Talk it through with {ASSISTANT_NAME}</h1>
+            <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.02em]">Talk with {ASSISTANT_NAME}</h1>
           </div>
 
           {workspaces !== undefined && (
             <p className="text-sm text-muted" data-testid="session-workspace">
               Workspace: {workspace?.name ?? "Personal"}
-              {workspace?.phiMode && " (health-data mode: sessions are off)"} ·{" "}
+              {workspace?.phiMode && " (health-data mode: talking is turned off here)"} ·{" "}
               <Link href="/app/workspaces">
                 Change
               </Link>
@@ -94,7 +94,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
 
           <div>
             <label htmlFor="focus" className="label">
-              Today&apos;s focus <span className="font-normal text-muted">(optional)</span>
+              What do you want to talk about? <span className="font-normal text-muted">(you can skip this)</span>
             </label>
             <textarea
               id="focus"
@@ -103,7 +103,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
               value={focus}
               onChange={(e) => setFocus(e.target.value)}
               disabled={busy}
-              placeholder="A launch, a story you keep telling, something that changed…"
+              placeholder="Something new, a story you love to tell, something that changed…"
               className="field"
             />
           </div>
@@ -122,7 +122,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
               Start talking
             </button>
             <p className="mt-2 text-sm text-muted">
-              {ASSISTANT_NAME} will ask how much time you have, from 10 minutes up to 90.
+              {ASSISTANT_NAME} will ask how long you can talk. Anywhere from 10 minutes to 90 is fine.
             </p>
           </div>
 
@@ -142,7 +142,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
                 <p className="font-medium">{STATUS_LABEL[activeCall.status]}</p>
                 {activeCall.status === "failed" && (
                   <p className="text-sm text-muted">
-                    {activeCall.processingError ?? "The session ended before it could be processed."}
+                    {activeCall.processingError ?? "The talk ended before we could make anything from it."}
                   </p>
                 )}
               </div>
@@ -152,7 +152,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
                   onClick={() => session.end()}
                   className="btn btn-sm border-end bg-end text-white hover:bg-end hover:text-white hover:brightness-110"
                 >
-                  End session
+                  Stop talking
                 </button>
               )}
             </div>
@@ -160,11 +160,11 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
         </section>
 
         <section>
-          <h2 className="section-title">Past sessions</h2>
+          <h2 className="section-title">Your past talks</h2>
           {calls === undefined ? (
             <p className="mt-2 text-muted">Loading…</p>
           ) : calls.length === 0 ? (
-            <p className="mt-2 text-muted">Your sessions will show up here.</p>
+            <p className="mt-2 text-muted">Your talks will show up here.</p>
           ) : (
             <ul className="card mt-3 divide-y divide-border overflow-hidden">
               {calls.map((call) => (
@@ -199,7 +199,7 @@ export function SessionPanel({ product }: { product: SessionProduct }) {
           <SessionResults callId={shownCallId} onDeleted={() => setSelectedCallId(null)} />
         ) : (
           <div className="rounded-2xl border border-dashed border-border-strong p-8 text-muted">
-            After your first session, your summary, themes and drafts appear here.
+            After your first talk, everything we made from it shows up here.
           </div>
         )}
       </div>

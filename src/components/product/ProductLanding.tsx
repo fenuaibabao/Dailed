@@ -60,7 +60,7 @@ function Steps({ steps, heading }: { steps: LandingStep[]; heading?: string }) {
     <section id="how" aria-labelledby="how-h" className={`${SECTION} flex flex-col gap-6 pb-[clamp(56px,8vw,96px)]`}>
       <p className="eyebrow">How it works</p>
       <h2 id="how-h" className={H2}>
-        {heading ?? "Three steps. You only do the talking."}
+        {heading ?? "Three steps. You just talk."}
       </h2>
       <ol className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-4 p-0">
         {steps.map((step, i) => (
@@ -97,7 +97,7 @@ function Example({ example }: { example: LandingExample }) {
         <div className="card flex min-w-0 flex-[1.4_1_380px] flex-col gap-3.5 rounded-[18px] p-7">
           <div className="flex flex-wrap justify-between gap-3 text-[13px]">
             <span className="tag">{example.outputLabel}</span>
-            <span className="text-muted">{example.outputNote ?? "Built only from what you said"}</span>
+            <span className="text-muted">{example.outputNote ?? "Made only from what you said"}</span>
           </div>
           {example.outputTitle && <h3 className="m-0 text-[21px] font-semibold">{example.outputTitle}</h3>}
           {typeof example.output === "string" ? (
@@ -193,7 +193,7 @@ export function ProductLanding({ product }: { product: ProductConfig }) {
                 <MicIcon />
                 Start talking
               </Link>
-              <span className="text-[15px] text-muted">Works in your browser. Just bring a microphone.</span>
+              <span className="text-[15px] text-muted">Works in your web browser. You just need a microphone.</span>
             </div>
           ) : (
             <p className="notice self-start text-base" data-testid="coming-soon">

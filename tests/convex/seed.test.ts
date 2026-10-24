@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { api, internal } from "../../convex/_generated/api";
 import { REMI_FIRST_MESSAGE, REMI_SYSTEM_PROMPT } from "../../convex/lib/remi";
-import { BRAND } from "../../src/config/brand";
+import { BRAND, NOT_A_PERSON } from "../../src/config/brand";
 import { PRODUCTS, SEEDED_PRODUCTS } from "../../src/config/products";
 import { newTest, signedInAs } from "./helpers";
 
@@ -56,8 +56,11 @@ test("seed refuses to run without REMI_ASSISTANT_ID", async () => {
 });
 
 test("Remi's prompt and first message use the brand and assistant name constants", () => {
-  expect(REMI_SYSTEM_PROMPT.startsWith(`You are ${BRAND.assistant}, ${BRAND.name}'s AI interviewer.`)).toBe(true);
-  expect(REMI_FIRST_MESSAGE).toContain(`this is ${BRAND.assistant}, your AI interviewer from ${BRAND.name}.`);
+  expect(REMI_SYSTEM_PROMPT.startsWith(`You are ${BRAND.assistant}, ${BRAND.name}'s ${BRAND.assistantKind}:`)).toBe(true);
+  expect(REMI_FIRST_MESSAGE).toContain(`I'm ${BRAND.assistant}, a ${BRAND.assistantKind} from ${BRAND.name}.`);
+  // Says it isn't a person, in plain words, without the word "AI".
+  expect(REMI_FIRST_MESSAGE).toContain(NOT_A_PERSON);
+  expect(REMI_FIRST_MESSAGE).not.toMatch(/\bAI\b/);
 });
 
 test("the default persona query never sends the system prompt to the browser", async () => {

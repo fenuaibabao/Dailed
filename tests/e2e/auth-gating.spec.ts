@@ -176,15 +176,15 @@ test("the Products menu and footer move between every product page", async ({ pa
 test("/daily explains the service, is coming soon and says it isn't an emergency service", async ({ page }) => {
   await page.goto("/daily");
   await expect(page.getByRole("banner").getByText("Warpwork Daily")).toBeVisible();
-  await expect(page.getByTestId("coming-soon")).toContainText("small group of families");
-  await expect(page.getByTestId("product-disclaimer")).toContainText("not a medical or emergency service");
+  await expect(page.getByTestId("coming-soon")).toContainText("a few families first");
+  await expect(page.getByTestId("product-disclaimer")).toContainText("not a doctor or an emergency service");
   await expect(page.getByRole("link", { name: "Start talking" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
-  await expect(page.getByRole("heading", { name: "Three steps. Your parent just answers the phone." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Three steps. Your parent just picks up the phone." })).toBeVisible();
   await expect(page.getByText("Only your parent can say yes.")).toBeVisible();
-  await expect(page.getByText("An example, not a real call")).toBeVisible();
-  await expect(page.getByText("call 911, then lets you know")).toBeVisible();
+  await expect(page.getByText("Just an example, not a real call")).toBeVisible();
+  await expect(page.getByText("call 911, then tells you")).toBeVisible();
 });
 
 test("signed-out visitors to a product's session page keep the product through sign-in", async ({ page }) => {

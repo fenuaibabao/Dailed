@@ -45,7 +45,7 @@ function footer(parentName: string, ctx: EmailContext): string[] {
   const lines = [PRODUCTS.daily.disclaimer ?? ""];
   const url = dashboardUrl(ctx.siteUrl);
   if (ctx.isOwner) {
-    lines.push(url ? `See every call and change who gets these emails: ${url}` : "Change who gets these emails on your Daily page.");
+    lines.push(url ? `See every call, or change who gets these emails: ${url}` : "You can change who gets these emails on your Daily page.");
   } else {
     const who = ctx.ownerName.trim() || "A family member";
     lines.push(`${who} added you to ${BRAND_NAME} Daily for ${parentName}. To stop getting these, ask them to remove you.`);
@@ -86,10 +86,10 @@ export function summaryEmail(input: SummaryEmailInput, ctx: EmailContext): Email
   const sections = [{ label: "The call", body: talk.join(" ") }];
   if (input.highlights.length > 0) sections.push({ label: "Highlights", body: input.highlights.join(" ") });
   if (input.checkIns.length > 0) sections.push({ label: `${name} said`, body: input.checkIns.join(" ") });
-  if (input.passOn) sections.push({ label: "Passing on", body: input.passOn });
+  if (input.passOn) sections.push({ label: `${name} wants you to know`, body: input.passOn });
   return render(
     input.passOn ? `${name} has a message for you` : `Today's call with ${name}`,
-    `Here's how ${ASSISTANT_NAME}'s call with ${name} went (${when}). What ${name} says about medicine, sleep or meals is passed on as they said it.`,
+    `Here's how ${ASSISTANT_NAME}'s call with ${name} went (${when}). Anything ${name} said about medicine, sleep or meals is written just the way they said it.`,
     sections,
     footer(name, ctx),
   );
@@ -112,7 +112,7 @@ const ALERT_SUBJECT: Record<AlertEmailInput["kind"], (name: string) => string> =
 export function alertEmail(input: AlertEmailInput, ctx: EmailContext): Email {
   const sections =
     input.kind === "concern"
-      ? [{ label: "If it's an emergency", body: `Call 911. ${ASSISTANT_NAME} can't send help and doesn't watch over ${input.parentName}'s health.` }]
+      ? [{ label: "If it's an emergency", body: `Call 911. ${ASSISTANT_NAME} can't send help, and ${ASSISTANT_NAME} doesn't keep watch over ${input.parentName}'s health.` }]
       : [];
   return render(ALERT_SUBJECT[input.kind](input.parentName), input.message, sections, footer(input.parentName, ctx));
 }

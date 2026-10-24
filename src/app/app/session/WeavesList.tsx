@@ -23,12 +23,12 @@ export function WeavesList({
 
   return (
     <section data-testid="weaves">
-      <h2 className="section-title">Weaves</h2>
-      <p className="mt-1 text-sm text-muted">Topics that keep coming up across your sessions.</p>
+      <h2 className="section-title">Topics</h2>
+      <p className="mt-1 text-sm text-muted">Things you talk about again and again.</p>
       {weaves === undefined ? (
         <p className="mt-2 text-muted">Loading…</p>
       ) : weaves.length === 0 ? (
-        <p className="mt-2 text-muted">After a session, its main topics show up here and grow as you come back to them.</p>
+        <p className="mt-2 text-muted">After you talk, the main topics show up here. They grow each time you come back to them.</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {weaves.map((weave) => (
@@ -37,7 +37,7 @@ export function WeavesList({
                 <summary className="cursor-pointer list-none p-4 hover:bg-surface-2/60">
                   <span className="font-medium">{weave.title}</span>
                   <span className="block text-sm text-muted">
-                    {weave.sessionCount} {weave.sessionCount === 1 ? "session" : "sessions"} · last{" "}
+                    {weave.sessionCount} {weave.sessionCount === 1 ? "talk" : "talks"} · last{" "}
                     {formatDay(weave.updatedAt)}
                   </span>
                 </summary>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ConsentStep } from "@/components/auth/ConsentStep";
 import { enabledProductOrDefault } from "@/config/products";
 
-export const metadata: Metadata = { title: "Before your first session" };
+export const metadata: Metadata = { title: "Before you start" };
 
 export default async function ConsentPage({
   searchParams,

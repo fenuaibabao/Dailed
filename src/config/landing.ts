@@ -1,4 +1,4 @@
-import { ASSISTANT_NAME, BRAND_NAME } from "./brand";
+import { ASSISTANT_KIND, ASSISTANT_NAME, BRAND_NAME, NOT_A_PERSON } from "./brand";
 
 /**
  * Landing page copy, one entry per live product, plus Daily ahead of launch. Every product uses the same
@@ -7,6 +7,9 @@ import { ASSISTANT_NAME, BRAND_NAME } from "./brand";
  *
  * Copy must only promise outputs the product really produces (see its
  * `outputs` in products.ts). Examples are illustrations, not real sessions.
+ *
+ * Write so a five-year-old could follow how it works: short sentences, everyday
+ * words, no jargon. Never say "AI"; use ASSISTANT_KIND and NOT_A_PERSON.
  */
 
 export type LandingStep = { title: string; body: string };
@@ -41,25 +44,31 @@ export type LandingCopy = {
   trust: LandingStep[];
 };
 
-const AI_DISCLOSURE = `${ASSISTANT_NAME} says it's an AI at the start of every session, and that the session is recorded.`;
+const R = ASSISTANT_NAME;
+const KIND = ASSISTANT_KIND;
+
+/** The same honest line on every product page. */
+const NOT_A_PERSON_STEP: LandingStep = {
+  title: `${R} is ${NOT_A_PERSON}`,
+  body: `${R} always says so first, and says that the talk is being recorded.`,
+};
 
 export const LANDING: Record<string, LandingCopy> = {
   create: {
     shortName: "Create",
     eyebrow: "For creators and coaches",
-    title: "Talk it through. Get a week of posts in your own words.",
-    intro:
-      `${ASSISTANT_NAME}, an AI interviewer, asks you good questions out loud. Afterwards you get a private summary and drafts of posts, short video scripts and a newsletter, built only from what you said.`,
+    title: "Just talk. Get a week of posts in your own words.",
+    intro: `${R} is a ${KIND}. ${R} asks you questions, and you answer out loud. Then you get your posts, video scripts and a newsletter, made only from what you said.`,
     steps: [
       {
         title: "Talk",
-        body: `${ASSISTANT_NAME} asks how much time you have, then asks about your work. It goes deeper where you have energy and moves on when you don't.`,
+        body: `${R} asks how long you can talk. Then ${R} asks about your work. When you love a topic, ${R} asks more. When you don't, ${R} moves on.`,
       },
       {
-        title: "Review",
-        body: "Read your summary and drafts. Each one sits next to the words it came from, so it sounds like you.",
+        title: "Look",
+        body: "Read what was made for you. Each piece shows the words you said, so it sounds like you.",
       },
-      { title: "Use", body: "Copy what you like and post it wherever you post." },
+      { title: "Use", body: "Copy what you like. Post it anywhere you want." },
     ],
     example: {
       heading: "What you said, and what you get",
@@ -69,144 +78,126 @@ export const LANDING: Record<string, LandingCopy> = {
         "Two years of sending mixes into the void. Zero callbacks.\n\nThen one slow Tuesday: twelve people in the room, four of them dancing. I dropped my setlist and played for those four.\n\nBy midnight it was forty.\n\nThe owner never heard my mix. He saw the bar stay full past one. That night turned into my residency.\n\nIf you're trying to get booked, stop polishing the mix. Fill the room.",
     },
     trust: [
-      { title: `${ASSISTANT_NAME} is an AI`, body: `Not a person. ${AI_DISCLOSURE}` },
-      {
-        title: "Private to you",
-        body: "Your sessions, summaries and drafts are yours alone. Delete any session, any time.",
-      },
-      {
-        title: "Nothing is posted for you",
-        body: `${BRAND_NAME} never posts on your accounts. You choose what to use and where.`,
-      },
+      NOT_A_PERSON_STEP,
+      { title: "Only you can see it", body: "What you say and what you get belong to you. You can delete any talk, any time." },
+      { title: "We never post for you", body: `${BRAND_NAME} never posts on your accounts. You choose what to share.` },
     ],
   },
   daily: {
     shortName: "Daily",
-    eyebrow: "For families with aging parents",
+    eyebrow: "For families with older parents",
     title: "A friendly phone call for your mom or dad, every day.",
-    intro:
-      `${ASSISTANT_NAME}, an AI, calls your parent at a time you choose for a short, warm chat about their day. Afterwards you get a short summary, so you know how they're doing on the days you can't call.`,
-    comingSoon: "Coming soon. We're starting with a small group of families.",
-    stepsHeading: "Three steps. Your parent just answers the phone.",
+    intro: `${R} is a ${KIND}. ${R} calls your parent at a time you pick, for a short, happy chat about their day. After the call, you get a short note about how they're doing.`,
+    comingSoon: "Coming soon. We're starting with a few families first.",
+    stepsHeading: "Three steps. Your parent just picks up the phone.",
     steps: [
       {
         title: "Set it up",
-        body: "Add your parent's name, phone number and the best time to call, plus what they love to talk about.",
+        body: "Tell us your parent's name, phone number and a good time to call, plus what they love to talk about.",
       },
       {
-        title: `${ASSISTANT_NAME} calls`,
-        body: `On the first call, ${ASSISTANT_NAME} says it's an AI and asks your parent if it can keep calling. Only your parent can say yes.`,
+        title: `${R} calls`,
+        body: `On the first call, ${R} says it's ${NOT_A_PERSON}, and asks your parent: "Can I call you each day?" Only your parent can say yes.`,
       },
       {
         title: "You hear how it went",
-        body: `After each call you get a short summary: how they sounded, what they talked about, and anything they asked ${ASSISTANT_NAME} to pass on.`,
+        body: `After each call, you get a short note: how they sounded, what they talked about, and anything they asked ${R} to tell you.`,
       },
     ],
     example: {
       heading: "What your parent says, and what you get",
       saidLabel: "Your mom said",
       said: "“The tomatoes finally came in. I gave a whole bag to Linda next door.”",
-      outputLabel: "Family summary",
-      outputNote: "An example, not a real call",
+      outputLabel: "Family note",
+      outputNote: "Just an example, not a real call",
       output: [
-        { label: "The call", body: "Answered at 9:10am and talked for 6 minutes. She sounded cheerful." },
-        { label: "Highlights", body: "Picked her first tomatoes and shared them with her neighbor Linda." },
+        { label: "The call", body: "She picked up at 9:10am and talked for 6 minutes. She sounded happy." },
+        { label: "Highlights", body: "She picked her first tomatoes and shared them with Linda next door." },
         { label: "She said", body: "She slept well and took her morning pills." },
-        { label: "Passing on", body: "She wants to know if you're still coming on Sunday." },
+        { label: "She wants you to know", body: "She's asking if you're still coming on Sunday." },
       ],
     },
     trust: [
       {
         title: "Your parent decides",
-        body: `Calls only continue after your parent says yes on the first call. They can tell ${ASSISTANT_NAME} to stop at any time, and you'll be told.`,
+        body: `${R} only keeps calling if your parent says yes. They can say "stop calling" any time, and we'll tell you.`,
       },
       {
-        title: `${ASSISTANT_NAME} is an AI`,
-        body: `${ASSISTANT_NAME} never pretends to be a person. It says it's an AI and that calls are recorded.`,
+        title: `${R} is ${NOT_A_PERSON}`,
+        body: `${R} never pretends to be a person. ${R} says so on every call, and says the call is recorded.`,
       },
       {
-        title: "A check-in, not care",
-        body: `${ASSISTANT_NAME} never gives medical advice. If something sounds like an emergency, it tells your parent to hang up and call 911, then lets you know.`,
+        title: "A check-in, not a doctor",
+        body: `${R} never gives medical advice. If something sounds like an emergency, ${R} tells your parent to hang up and call 911, then tells you.`,
       },
       {
         title: "Your parent knows what you'll see",
-        body: `${ASSISTANT_NAME} tells your parent what goes in your summary. If they ask to keep something private, it stays private, unless it's about their safety.`,
+        body: `${R} tells your parent what goes in your note. If they ask ${R} to keep something private, ${R} does, unless it's about their safety.`,
       },
     ],
   },
   clarity: {
     shortName: "Clarity",
-    eyebrow: "For big decisions and busy minds",
-    title: "Talk it through. See what you really think.",
-    intro:
-      `${ASSISTANT_NAME}, an AI interviewer, helps you think out loud about what's on your mind. It asks what matters, notices what you keep coming back to, and writes you a private summary from what you said.`,
+    eyebrow: "For big choices and busy minds",
+    title: "Talk it out. See what you really think.",
+    intro: `${R} is a ${KIND}. ${R} helps you think out loud. ${R} asks what matters to you, notices what you keep coming back to, and writes you a private note from what you said.`,
     steps: [
       {
         title: "Talk",
-        body: `Tell ${ASSISTANT_NAME} what's on your mind. It asks how much time you have, then asks the questions a good friend would.`,
+        body: `Tell ${R} what's on your mind. ${R} asks how long you can talk, then asks the kind of questions a good friend would.`,
       },
       {
-        title: "Review",
-        body: "Read your private summary, the themes you kept coming back to, and the threads that are still open.",
+        title: "Look",
+        body: "Read your private note: the big ideas you kept coming back to, and the questions you still have.",
       },
       {
         title: "Come back",
-        body: `Keep it for yourself, or copy it to share with someone you trust. ${ASSISTANT_NAME} remembers where you left off next time.`,
+        body: `Keep it to yourself, or share it with someone you trust. Next time, ${R} remembers where you left off.`,
       },
     ],
     example: {
       heading: "What you said, and what you get",
       said: "“I keep saying I want stability, but every time I picture staying I feel flat.”",
-      outputLabel: "Private summary",
-      outputTitle: "Take the new role, or stay?",
+      outputLabel: "Private note",
+      outputTitle: "Take the new job, or stay?",
       output: [
         {
-          label: "Summary",
-          body: "You talked through a job offer in another city. You said stability three times, but only when talking about other people's expectations. Your energy rose every time you described the new team.",
+          label: "What you talked about",
+          body: "You talked about a job in another city. You said you want things to stay steady, but only when you talked about what other people expect. You sounded excited every time you talked about the new team.",
         },
-        { label: "Themes", body: "Growth over stability for now. Fear of letting people down. Timing." },
-        { label: "Still open", body: "Have you asked your partner what they want, not what they'll accept?" },
+        { label: "Big ideas", body: "Growing matters more than staying put, for now. Worry about letting people down. Timing." },
+        { label: "Still thinking about", body: "Have you asked your partner what they want, not just what they'll accept?" },
       ],
     },
     trust: [
-      { title: `${ASSISTANT_NAME} is an AI`, body: `Not a person, and not therapy or professional advice. ${AI_DISCLOSURE}` },
       {
-        title: "Private to you",
-        body: "Your sessions and summaries are yours alone. Delete any session, any time.",
+        title: `${R} is ${NOT_A_PERSON}`,
+        body: `${R} isn't a therapist and doesn't give advice. ${R} always says so first, and says that the talk is being recorded.`,
       },
-      {
-        title: "Nothing is shared for you",
-        body: `${BRAND_NAME} never sends your summary to anyone. You decide if and with whom.`,
-      },
+      { title: "Only you can see it", body: "What you say and your notes belong to you. You can delete any talk, any time." },
+      { title: "We never share it for you", body: `${BRAND_NAME} never sends your notes to anyone. You decide who sees them.` },
     ],
   },
   founder: {
     shortName: "Founder",
-    eyebrow: "For early-stage founders",
-    title: "Talk through the week. Get your investor update.",
-    intro:
-      `${ASSISTANT_NAME}, an AI interviewer, runs your weekly check-in out loud. Afterwards you get a weekly reflection, an investor update, a log of your decisions and why you made them, and a pitch narrative when there's enough to tell.`,
+    eyebrow: "For people starting a company",
+    title: "Talk about your week. Get your update for investors.",
+    intro: `${R} is a ${KIND}. Once a week, ${R} asks how your company is going, and you answer out loud. Then you get a note about your week, an update for the people who invested, a list of what you decided and why, and your company's story when there's enough to tell.`,
     steps: [
       {
         title: "Talk",
-        body: `${ASSISTANT_NAME} asks what moved, the numbers you track, what customers taught you, what you decided and what's in the way.`,
+        body: `${R} asks what changed, your numbers, what customers taught you, what you decided and what's in your way.`,
       },
       {
-        title: "Review",
-        body: "Read your investor update and decision log. Any number you didn't actually say is flagged for you to check.",
+        title: "Look",
+        body: "Read your investor update and your list of choices. If a number shows up that you didn't say, it's marked so you can check it.",
       },
-      { title: "Send", body: "Copy the update into your email and send it yourself." },
+      { title: "Send", body: "Copy the update into an email and send it yourself." },
     ],
     trust: [
-      { title: `${ASSISTANT_NAME} is an AI`, body: `Not a person. ${AI_DISCLOSURE}` },
-      {
-        title: "Private to you",
-        body: "Your sessions, numbers and notes are yours alone. Delete any session, any time.",
-      },
-      {
-        title: "Nothing is sent for you",
-        body: `${BRAND_NAME} never emails your investors. You choose what to send and when.`,
-      },
+      NOT_A_PERSON_STEP,
+      { title: "Only you can see it", body: "What you say, your numbers and your notes belong to you. You can delete any talk, any time." },
+      { title: "We never send it for you", body: `${BRAND_NAME} never emails your investors. You choose what to send and when.` },
     ],
   },
 };

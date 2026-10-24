@@ -5,13 +5,14 @@ import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { CopyButton } from "./CopyButton";
+import { ASSISTANT_NAME } from "@/config/brand";
 
 const DRAFT_SECTIONS = [
   { kind: "investor_update", heading: "Investor update" },
-  { kind: "decision", heading: "Decision log" },
-  { kind: "pitch", heading: "Pitch narrative" },
+  { kind: "decision", heading: "What you decided" },
+  { kind: "pitch", heading: "Your company story" },
   { kind: "post", heading: "Posts" },
-  { kind: "script", heading: "Short-video scripts" },
+  { kind: "script", heading: "Video scripts" },
   { kind: "newsletter", heading: "Newsletter" },
   { kind: "idea", heading: "Ideas for next time" },
 ] as const;
@@ -26,21 +27,21 @@ function DeleteSession({ callId, onDeleted }: { callId: Id<"calls">; onDeleted?:
         type="button"
         disabled={pending}
         onClick={async () => {
-          if (!window.confirm("Delete this session's transcript, drafts and memories? This can't be undone.")) return;
+          if (!window.confirm(`Delete everything from this talk: the words, what we made, and what ${ASSISTANT_NAME} remembers from it? You can't undo this.`)) return;
           setPending(true);
           setError(null);
           try {
             await deleteSession({ callId });
             onDeleted?.();
           } catch {
-            setError("We couldn't delete this session. Please try again.");
+            setError("We couldn't delete this talk. Please try again.");
           } finally {
             setPending(false);
           }
         }}
         className="btn btn-danger"
       >
-        {pending ? "Deleting…" : "Delete this session"}
+        {pending ? "Deleting…" : "Delete this talk"}
       </button>
       {error && (
         <p role="alert" className="mt-2 text-sm text-danger">
@@ -65,7 +66,7 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
       {summary && (
         <section className="card p-6">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="section-title">Summary</h2>
+            <h2 className="section-title">What you talked about</h2>
             <CopyButton text={summary.body} />
           </div>
           <p className="mt-3 text-base leading-relaxed text-soft">{summary.body}</p>
@@ -74,12 +75,12 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
 
       {weaves !== undefined && weaves.length > 0 && (
         <section>
-          <h2 className="section-title">Part of</h2>
-          <ul className="mt-2 flex flex-wrap gap-2" aria-label="Weaves this session belongs to">
+          <h2 className="section-title">Topics in this talk</h2>
+          <ul className="mt-2 flex flex-wrap gap-2" aria-label="Topics in this talk">
             {weaves.map((w) => (
               <li key={w._id} title={w.note} className="chip">
                 {w.title}
-                {w.sessionCount > 1 && <span className="text-muted"> · {w.sessionCount} sessions</span>}
+                {w.sessionCount > 1 && <span className="text-muted"> · {w.sessionCount} talks</span>}
               </li>
             ))}
           </ul>
@@ -88,7 +89,7 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
 
       {themes.length > 0 && (
         <section>
-          <h2 className="section-title">Themes</h2>
+          <h2 className="section-title">Big ideas</h2>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-soft marker:text-muted">
             {themes.map((t) => (
               <li key={t._id}>{t.body}</li>
@@ -125,7 +126,7 @@ export function SessionResults({ callId, onDeleted }: { callId: Id<"calls">; onD
                     </p>
                     {item.body.includes("[check this number]") && (
                       <p className="notice notice-warn mt-3">
-                        Numbers marked “check this number” weren&apos;t found in what you said. Fix them before sending.
+                        If a number says “check this number,” you didn&apos;t say it out loud. Fix it before you send.
                       </p>
                     )}
                     {item.sourceExcerpt && (

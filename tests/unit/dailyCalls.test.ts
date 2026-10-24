@@ -5,7 +5,7 @@ import { finalizeDailyResult, dailyResultSchema } from "../../convex/lib/dailyPr
 import { buildDailyPrompt, consentOpening, dailyFirstMessage } from "../../convex/lib/dailyPrompt";
 import { buildVapiCallRequest, vapiCallIdFrom } from "../../convex/lib/dailyVapi";
 import { wasAnswered } from "../../convex/dailyCalls";
-import { ASSISTANT_NAME } from "../../src/config/brand";
+import { ASSISTANT_KIND, ASSISTANT_NAME, NOT_A_PERSON } from "../../src/config/brand";
 
 // Monday 2026-10-19, 9:15am in Chicago (14:15 UTC).
 const MON_915_CHICAGO = Date.parse("2026-10-19T14:15:00Z");
@@ -148,15 +148,18 @@ describe("finalizeDailyResult", () => {
 });
 
 describe("prompts and the Vapi request", () => {
-  test("the first call asks permission and says it's an AI and recorded; later calls still disclose", () => {
+  test("the first call asks permission and says it isn't a person and is recorded; later calls still say so", () => {
     const first = dailyFirstMessage({ parentName: "Mom", childName: "Ada", isConsentCall: true });
     expect(first).toBe(consentOpening("Mom", "Ada"));
-    expect(first).toContain(`this is ${ASSISTANT_NAME}, an AI assistant`);
-    expect(first).toContain("Calls are recorded");
+    expect(first).toContain(`this is ${ASSISTANT_NAME}, a ${ASSISTANT_KIND}`);
+    expect(first).toContain(NOT_A_PERSON);
+    expect(first).toContain("calls are recorded");
+    expect(first).not.toMatch(/\bAI\b/);
     expect(first).toContain("Is it OK if I call you each day?");
-    expect(consentOpening("Mom", "")).toContain("Your family set up");
+    expect(consentOpening("Mom", "")).toContain("Your family asked me");
     const later = dailyFirstMessage({ parentName: "Mom", childName: "Ada", isConsentCall: false });
-    expect(later).toContain("AI");
+    expect(later).toContain("computer voice");
+    expect(later).not.toMatch(/\bAI\b/);
     expect(later).toContain("recorded");
   });
 

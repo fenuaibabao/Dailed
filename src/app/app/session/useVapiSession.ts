@@ -12,16 +12,16 @@ type VapiOverrides = Parameters<VapiInstance["start"]>[1];
 
 const START_ERRORS: Record<ActionErrorCode | "VOICE_UNAVAILABLE" | "MIC_OR_CONNECTION", string> = {
   UNAUTHENTICATED: "Your sign-in expired. Please sign in again.",
-  RECORDING_CONSENT_REQUIRED: "Please agree to recording before starting a session.",
-  APP_NOT_SEEDED: "Sessions aren't set up on this server yet (the seed hasn't run).",
+  RECORDING_CONSENT_REQUIRED: "Please say yes to recording before you start talking.",
+  APP_NOT_SEEDED: "Talking isn't set up on this server yet (the seed hasn't run).",
   PRODUCT_UNAVAILABLE: "This product isn't available yet.",
   PHI_NOT_READY:
-    "This workspace is in health-data mode. Sessions there stay off until our vendors sign health-data agreements (BAAs). Switch to another workspace to talk.",
-  SPEND_CAP_REACHED: "Sessions are paused for today because we've hit our daily usage limit. Please try again tomorrow.",
-  VOICE_UNAVAILABLE: "Voice sessions aren't available right now. Please try again later.",
+    "This workspace is in health-data mode, so talking is turned off here for now. Switch to another workspace to talk.",
+  SPEND_CAP_REACHED: "Talking is paused for today because we hit our daily limit. Please try again tomorrow.",
+  VOICE_UNAVAILABLE: "Talking isn't working right now. Please try again later.",
   MIC_OR_CONNECTION:
-    "We couldn't start the call. Check that your browser can use the microphone, then try again.",
-  UNKNOWN: "Something went wrong starting the session. Please try again.",
+    "We couldn't start. Make sure your browser is allowed to use your microphone, then try again.",
+  UNKNOWN: "Something went wrong when starting. Please try again.",
 };
 
 /**

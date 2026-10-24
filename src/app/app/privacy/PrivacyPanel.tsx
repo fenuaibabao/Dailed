@@ -4,6 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { RETENTION_OPTIONS, describeActivity, formatWhen } from "@/lib/activity";
+import { ASSISTANT_NAME } from "@/config/brand";
 
 function downloadJson(data: unknown, filename: string) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -41,12 +42,12 @@ export function PrivacyPanel() {
     <div className="max-w-2xl space-y-8">
       <div>
         <h1 className="page-title">Your data</h1>
-        <p className="mt-3 text-base text-soft">Choose how long sessions are kept, what transcripts hide, and get a copy of everything.</p>
+        <p className="mt-3 text-base text-soft">Pick how long we keep your talks, what we hide, and get a copy of everything we have.</p>
       </div>
 
       <section className="card space-y-3 p-6">
         <label htmlFor="retention" className="block text-base font-semibold">
-          Keep my sessions for
+          Keep my talks for
         </label>
         <select
           id="retention"
@@ -62,8 +63,8 @@ export function PrivacyPanel() {
           ))}
         </select>
         <p className="text-sm text-muted">
-          Older sessions&apos; transcripts, drafts and memories are deleted once a day. You keep a dated record that the
-          session happened. A workspace&apos;s limit applies too, and the shorter one wins.
+          Once a day, we delete older talks: the words, what we made, and what {ASSISTANT_NAME} remembers from them. We keep only the
+          date each talk happened. If your workspace has a limit too, the shorter one wins.
         </p>
       </section>
 
@@ -77,10 +78,11 @@ export function PrivacyPanel() {
             onChange={(e) => run(() => setRedaction({ on: e.target.checked }))}
           />
           <span>
-            <span className="block text-base font-semibold">Hide emails and long numbers in my transcripts</span>
+            <span className="block text-base font-semibold">Hide emails and long numbers in my talks</span>
             <span className="block text-sm text-muted">
-              Emails and phone, card or ID numbers are replaced before anything is saved or sent to the AI, and the audio
-              recording isn&apos;t kept. Names and addresses aren&apos;t caught. Applies to new sessions.
+              We swap out emails and phone, card or ID numbers before saving your words or sending them to the computer that
+              writes your results, and we don&apos;t keep the sound recording. Names and addresses aren&apos;t caught. Works
+              for new talks.
             </span>
           </span>
         </label>
@@ -89,7 +91,7 @@ export function PrivacyPanel() {
       <section className="card space-y-3 p-6">
         <h2 className="text-base font-semibold">Download my data</h2>
         <p className="text-sm text-muted">
-          One file with your profile, consents, sessions, transcripts, drafts, memories and Weaves.
+          One file with everything: your profile, what you agreed to, your talks and their words, what we made, what {ASSISTANT_NAME} remembers, and your topics.
         </p>
         <button
           type="button"
@@ -117,7 +119,7 @@ export function PrivacyPanel() {
         {activity === undefined ? (
           <p className="mt-2 text-muted">Loading…</p>
         ) : activity.length === 0 ? (
-          <p className="mt-2 text-muted">Changes to your settings and workspaces show up here.</p>
+          <p className="mt-2 text-muted">When you change a setting or a workspace, it shows up here.</p>
         ) : (
           <ul className="card mt-3 divide-y divide-border" data-testid="my-activity">
             {activity.map((a) => (

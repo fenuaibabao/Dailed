@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { RETENTION_OPTIONS, describeActivity, formatWhen } from "@/lib/activity";
+import { ASSISTANT_NAME } from "@/config/brand";
 
 type Role = "owner" | "admin" | "member";
 
@@ -139,8 +140,8 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
       <div>
         <p className="text-sm font-medium">Health-data mode</p>
         <p className="text-sm text-muted">
-          For workspaces that would handle patient information. While it&apos;s on, sessions in this workspace stay off
-          until our vendors sign health-data agreements (BAAs).
+          For teams that talk about patients&apos; health. While it&apos;s on, nobody can talk with {ASSISTANT_NAME} in this workspace yet.
+          It turns on once our partners sign special health-privacy agreements.
         </p>
         <label className="mt-2 flex items-center gap-2.5 text-sm">
           <input
@@ -157,7 +158,7 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
 
       <div className="space-y-2">
         <label htmlFor={`retention-${orgId}`} className="block text-sm font-medium">
-          Keep sessions in this workspace for
+          Keep talks in this workspace for
         </label>
         <select
           id={`retention-${orgId}`}
@@ -182,7 +183,7 @@ function OrgDetails({ orgId }: { orgId: Id<"orgs"> }) {
             disabled={!isOwner || org.phiMode || action.pending}
             onChange={(e) => action.run(() => setRedaction({ orgId, on: e.target.checked }))}
           />
-          Hide emails and long numbers in transcripts
+          Hide emails and long numbers in talks
           {org.phiMode && <span className="text-muted">(always on in health-data mode)</span>}
         </label>
       </div>
@@ -287,13 +288,13 @@ export function WorkspacesPanel() {
       <div>
         <h1 className="page-title">Workspaces</h1>
         <p className="mt-3 text-base text-soft">
-          Use a workspace for a team, like a company or a clinic. Your sessions stay private to you either way.
+          A workspace is a shared space for a team, like a company or a clinic. Your talks stay private to you either way.
         </p>
       </div>
 
       <section>
         <label htmlFor="active-workspace" className="label">
-          New sessions go to
+          New talks go to
         </label>
         <select
           id="active-workspace"
