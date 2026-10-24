@@ -17,6 +17,7 @@ const START_ERRORS: Record<ActionErrorCode | "VOICE_UNAVAILABLE" | "MIC_OR_CONNE
   PRODUCT_UNAVAILABLE: "This product isn't available yet.",
   PHI_NOT_READY:
     "This workspace is in health-data mode. Sessions there stay off until our vendors sign health-data agreements (BAAs). Switch to another workspace to talk.",
+  SPEND_CAP_REACHED: "Sessions are paused for today because we've hit our daily usage limit. Please try again tomorrow.",
   VOICE_UNAVAILABLE: "Voice sessions aren't available right now. Please try again later.",
   MIC_OR_CONNECTION:
     "We couldn't start the call. Check that your browser can use the microphone, then try again.",

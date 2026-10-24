@@ -53,7 +53,10 @@ function Alerts({ alerts, timezone }: { alerts: DailyAlert[]; timezone: string }
         {alerts.slice(0, 3).map((alert) => (
           <li key={alert.id} className="flex flex-col gap-0.5">
             <span className="text-[17px]">{alert.message}</span>
-            <span className="text-sm text-muted">{formatCallTime(alert.at, timezone)}</span>
+            <span className="text-sm text-muted">
+              {formatCallTime(alert.at, timezone)}
+              {alert.emailed ? " · Emailed to your family" : ""}
+            </span>
           </li>
         ))}
       </ul>

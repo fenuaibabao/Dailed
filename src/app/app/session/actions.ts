@@ -14,6 +14,7 @@ const KNOWN_ERRORS = [
   "APP_NOT_SEEDED",
   "PRODUCT_UNAVAILABLE",
   "PHI_NOT_READY",
+  "SPEND_CAP_REACHED",
 ] as const;
 export type ActionErrorCode = (typeof KNOWN_ERRORS)[number] | "UNKNOWN";
 
